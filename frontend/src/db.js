@@ -281,3 +281,28 @@ export function getCurrentUser() {
 export function logout() {
   localStorage.removeItem("currentUser");
 }
+
+// Update complaint status - Admin
+export function updateIssueStatus(issueId, newStatus, description = "") {
+  const issues = getIssues();
+
+  const issueIndex = issues.findIndex(issue => issue.id === issueId);
+
+  if (issueIndex === -1) return null;
+
+  const today = new Date().toISOString().split('T')[0];
+
+  issues[issueIndex].status = newStatus;
+
+  issues[issueIndex].resolutionHistory.push({
+    status: newStatus,
+    description:
+      description ||
+      `Complaint status updated to ${newStatus}.`,
+    date: today
+  });
+
+  localStorage.setItem("complaints", JSON.stringify(issues));
+
+  return issues[issueIndex];
+}
