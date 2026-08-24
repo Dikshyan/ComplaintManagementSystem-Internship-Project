@@ -1,0 +1,25 @@
+/* Core App Layout Rules */
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  color: var(--primary-color);
+}
+
+main {
+  flex-grow: 1;
+}
+
+/* Page transitions helper container */
+.page-container {
+  opacity: 0;
+  animation: fadeIn 0.4s forwards ease-in-out;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
