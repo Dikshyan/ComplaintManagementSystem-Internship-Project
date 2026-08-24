@@ -46,6 +46,270 @@ project-root/
 
 The exact folder structure may evolve as the project grows, but contributors should follow the existing architecture rather than introducing a completely different structure.
 
+# Database Models
+
+The application uses the following core data models. Contributors should follow these structures when developing features and should avoid introducing duplicate models for functionality that is already represented here.
+
+## User
+
+The `User` model stores information about registered users.
+
+```text
+User
+├── _id
+├── name
+├── email
+└── ...
+```
+
+The user model is used by authentication, complaints, voting, comments, and staff management.
+
+---
+
+## Complaint
+
+The `Complaint` model is the central model of the application. It stores information about complaints submitted by users.
+
+```text
+Complaint
+├── _id
+├── userId
+├── category
+├── title
+├── description
+├── priority
+├── location
+├── attachments[]
+├── status
+├── assignedTo
+├── voteCount
+├── createdAt
+└── updatedAt
+```
+
+### Important Relationships
+
+```text
+Complaint
+├── userId
+│     └── User who created the complaint
+│
+├── assignedTo
+│     └── Staff member assigned to the complaint
+│
+├── voteCount
+│     └── Number of community votes
+│
+├── attachments[]
+│     └── Optional complaint files/images
+│
+└── status
+      └── Current complaint state
+```
+
+The complaint status should follow the application's defined workflow:
+
+```text
+Pending
+   ↓
+Assigned
+   ↓
+In Progress
+   ↓
+Resolved
+   ↓
+Closed
+```
+
+---
+
+## Vote
+
+The `Vote` model stores community support for complaints.
+
+```text
+Vote
+├── _id
+├── userId
+├── complaintId
+└── createdAt
+```
+
+### Relationship
+
+```text
+User
+  │
+  └── userId
+        │
+        ▼
+      Vote
+        │
+        └── complaintId
+              │
+              ▼
+           Complaint
+```
+
+A user should only be able to vote once on the same complaint.
+
+The database should enforce a unique relationship between:
+
+```text
+userId + complaintId
+```
+
+The `voteCount` stored in the `Complaint` model represents the current number of community votes.
+
+---
+
+## Comment
+
+The `Comment` model stores discussions related to complaints.
+
+```text
+Comment
+├── _id
+├── userId
+├── complaintId
+├── text
+└── createdAt
+```
+
+### Relationship
+
+```text
+User
+  │
+  └── userId
+        │
+        ▼
+      Comment
+        │
+        └── complaintId
+              │
+              ▼
+           Complaint
+```
+
+Comments should always be associated with both the user who created them and the complaint they belong to.
+
+---
+
+## ComplaintHistory
+
+The `ComplaintHistory` model maintains a record of changes made to a complaint.
+
+```text
+ComplaintHistory
+├── _id
+├── complaintId
+├── changedBy
+├── oldStatus
+├── newStatus
+├── note
+└── createdAt
+```
+
+### Relationship
+
+```text
+Complaint
+    │
+    └── complaintId
+          │
+          ▼
+   ComplaintHistory
+          │
+          └── changedBy
+                │
+                ▼
+               User
+```
+
+This allows the system to maintain a transparent timeline of complaint status changes.
+
+Example:
+
+```text
+Complaint Created
+      ↓
+Status: Pending → Assigned
+      ↓
+Status: Assigned → In Progress
+      ↓
+Status: In Progress → Resolved
+      ↓
+Status: Resolved → Closed
+```
+
+Each change should record:
+
+* Who made the change
+* Previous status
+* New status
+* Optional note
+* Date and time of the change
+
+---
+
+# Model Relationship Overview
+
+The core relationships can be represented as:
+
+```text
+                    ┌──────────────┐
+                    │     User     │
+                    └──────┬───────┘
+                           │
+              ┌────────────┼────────────┐
+              │            │            │
+              ▼            ▼            ▼
+         Complaint       Vote        Comment
+              │            │            │
+              │            │            │
+              └────────────┼────────────┘
+                           │
+                           ▼
+                  ComplaintHistory
+```
+
+More specifically:
+
+```text
+User
+ │
+ ├──────────────► Complaint
+ │                    │
+ │                    ├──────────────► Vote
+ │                    │
+ │                    ├──────────────► Comment
+ │                    │
+ │                    └──────────────► ComplaintHistory
+ │
+ ├──────────────► Vote
+ │
+ ├──────────────► Comment
+ │
+ └──────────────► ComplaintHistory
+```
+
+## Model Development Rules
+
+When adding a new feature:
+
+1. Check whether an existing model already supports the required data.
+2. Reuse existing relationships where possible.
+3. Do not create duplicate models for the same functionality.
+4. Add new fields only when they are required by the feature.
+5. Discuss major schema changes before implementing them.
+6. Test existing functionality after modifying a model.
+7. Update this section when a core model is significantly changed.
+
+These models form the initial database foundation of the application. Future features such as notifications, moderation, reports, and analytics may introduce additional models when required.
+
+
+
 ---
 
 # 2. Development Philosophy
