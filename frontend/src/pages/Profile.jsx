@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Calendar, Mail, FileText, ArrowUp, Info, PlusCircle, LogOut } from 'lucide-react';
-import { getCurrentUser, getIssues, logout } from '../db';
+import { getCurrentUser, getIssues, logout, fetchCurrentUser } from '../services/client';
 import { ProblemCard } from '../components/ProblemCard';
 
 export function Profile() {

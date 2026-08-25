@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, User, Menu, X, PlusCircle, LayoutGrid } from 'lucide-react';
-import { getCurrentUser, logout } from '../db';
+import { getCurrentUser, logout, fetchCurrentUser } from '../services/client';
 
 export function Header() {
   const location = useLocation();

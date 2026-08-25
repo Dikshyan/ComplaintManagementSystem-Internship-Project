@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, MapPin, Calendar, User, MessageSquare, ArrowUp, Send, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
-import { getIssueById, upvoteIssue, hasUpvoted, addComment } from '../db';
+import { getIssueById, upvoteIssue, hasUpvoted, addComment } from '../services/client';
 
 export function ProblemDetails() {
   const { id } = useParams();

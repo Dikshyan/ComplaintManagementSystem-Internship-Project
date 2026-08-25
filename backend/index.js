@@ -1,13 +1,28 @@
-const express = require("express")
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const { connectDB } = require("./db/db");
+const authRoutes = require("./routes/authRoutes");
+
 const app = express();
-const port = 8080;
+const port = process.env.PORT || 8080;
 
-app.get("/",(req, res)=>{
-    res.send("Hello World the server is live")
+connectDB();
+
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json());
+
+app.get("/", (req, res) => {
+  res.send("Hello World the server is live");
 });
 
-app.listen(port, ()=>{
-    console.log(`The server is Listenning in ${port}`);
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", message: "Authentication service is running" });
 });
 
+app.use("/api/auth", authRoutes);
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
 
