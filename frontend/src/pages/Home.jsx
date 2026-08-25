@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, PlusCircle, Award, CheckCircle, Flame, Users, Zap, ShieldAlert } from 'lucide-react';
-import { getIssues, getStats } from '../db';
+import { getIssues, getStats } from '../services/client';
 import { ProblemCard } from '../components/ProblemCard';
 
 export function Home() {

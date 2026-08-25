@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, MapPin, AlertOctagon, UploadCloud, ChevronRight, HelpCircle } from 'lucide-react';
-import { submitIssue, getCurrentUser } from '../db';
+import { submitIssue, getCurrentUser } from '../services/client';
 
 export function SubmitComplaint() {
   const navigate = useNavigate();

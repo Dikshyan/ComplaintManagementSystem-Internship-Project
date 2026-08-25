@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, ArrowUp, MessageSquare, Calendar, User } from 'lucide-react';
-import { upvoteIssue, hasUpvoted } from '../db';
+import { upvoteIssue, hasUpvoted } from '../services/client';
 
 export function ProblemCard({ problem, onVote }) {
   const [votes, setVotes] = useState(problem.upvotes);

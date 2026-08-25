@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, HelpCircle, PlusCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getIssues } from '../db';
+import { getIssues } from '../services/client';
 import { ProblemCard } from '../components/ProblemCard';
 
 const CATEGORIES = [

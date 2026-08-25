@@ -10,11 +10,15 @@ import { LoginRegister } from './pages/LoginRegister';
 import { Profile } from './pages/Profile';
 import { AdminDashboard } from './pages/AdminDashboard';
 import './App.css';
+import { ToastContainer } from 'react-toastify';
 
 function App() {
   return (
     <Router>
       <div className="app-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        {/* Toasts */}
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+
         {/* Global Navigation Header */}
         <Header />
         
