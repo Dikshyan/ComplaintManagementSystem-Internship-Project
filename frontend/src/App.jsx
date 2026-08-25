@@ -8,6 +8,7 @@ import { ProblemDetails } from './pages/ProblemDetails';
 import { SubmitComplaint } from './pages/SubmitComplaint';
 import { LoginRegister } from './pages/LoginRegister';
 import { Profile } from './pages/Profile';
+import { AdminDashboard } from './pages/AdminDashboard';
 import './App.css';
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
             <Route path="/login" element={<LoginRegister />} />
             <Route path="/register" element={<LoginRegister />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/admin" element={<AdminDashboard />} />
           </Routes>
         </main>
         
