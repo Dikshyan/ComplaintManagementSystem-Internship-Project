@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const { connectDB } = require("./db/db");
 const authRoutes = require("./routes/authRoutes");
+const complaintRoutes = require("./routes/complaintRoutes")
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -17,8 +18,14 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", message: "Authentication service is running" });
+    res.json({
+        status: "ok",
+        message: "Complaint Management API is running"
+    });
 });
+
+
+app.use("/api/complaint", complaintRoutes);
 
 app.use("/api/auth", authRoutes);
 
