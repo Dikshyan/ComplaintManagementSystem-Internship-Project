@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   FileText,
@@ -8,9 +8,8 @@ import {
   AlertCircle,
   Clock,
   CheckCircle,
-  ThumbsUp
-} from 'lucide-react';
-import { getStats, getIssues, updateIssueStatus } from '../db';
+  ThumbsUp,
+} from "lucide-react";
 
 export function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -18,7 +17,7 @@ export function AdminDashboard() {
     resolved: 0,
     progress: 0,
     active: 0,
-    totalVotes: 0
+    totalVotes: 0,
   });
 
   const [issues, setIssues] = useState([]);
@@ -38,42 +37,41 @@ export function AdminDashboard() {
   return (
     <div
       style={{
-        minHeight: '100vh',
-        backgroundColor: 'var(--bg-color)',
-        display: 'flex'
+        minHeight: "100vh",
+        backgroundColor: "var(--bg-color)",
+        display: "flex",
       }}
     >
       {/* Sidebar */}
       <aside
         style={{
-          width: '250px',
-          minHeight: '100vh',
-          backgroundColor: 'var(--primary-color)',
-          color: 'var(--white)',
-          padding: '2rem 1.25rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '2rem'
+          width: "250px",
+          minHeight: "100vh",
+          backgroundColor: "var(--primary-color)",
+          color: "var(--white)",
+          padding: "2rem 1.25rem",
+          display: "flex",
+          flexDirection: "column",
+          gap: "2rem",
         }}
       >
         {/* Brand */}
         <div
           style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '1.4rem',
-            fontWeight: '800',
-            borderBottom: '2px solid var(--white)',
-            paddingBottom: '1.5rem'
+            fontFamily: "var(--font-display)",
+            fontSize: "1.4rem",
+            fontWeight: "800",
+            borderBottom: "2px solid var(--white)",
+            paddingBottom: "1.5rem",
           }}
         >
           FIXMYSTREET
-
           <div
             style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.7rem',
-              marginTop: '0.4rem',
-              opacity: 0.7
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.7rem",
+              marginTop: "0.4rem",
+              opacity: 0.7,
             }}
           >
             ADMIN CONTROL CENTER
@@ -83,9 +81,9 @@ export function AdminDashboard() {
         {/* Navigation */}
         <nav
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem'
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem",
           }}
         >
           <button className="admin-nav-item">
@@ -110,7 +108,7 @@ export function AdminDashboard() {
         </nav>
 
         {/* Logout */}
-        <div style={{ marginTop: 'auto' }}>
+        <div style={{ marginTop: "auto" }}>
           <button className="admin-nav-item">
             <LogOut size={18} />
             Logout
@@ -122,20 +120,20 @@ export function AdminDashboard() {
       <main
         style={{
           flex: 1,
-          padding: '3rem',
-          maxWidth: '1400px'
+          padding: "3rem",
+          maxWidth: "1400px",
         }}
       >
         {/* Heading */}
-        <div style={{ marginBottom: '3rem' }}>
+        <div style={{ marginBottom: "3rem" }}>
           <div
             style={{
-              display: 'inline-block',
-              backgroundColor: 'var(--yellow)',
-              border: '2px solid var(--primary-color)',
-              padding: '0.5rem 1rem',
-              fontWeight: '800',
-              marginBottom: '1rem'
+              display: "inline-block",
+              backgroundColor: "var(--yellow)",
+              border: "2px solid var(--primary-color)",
+              padding: "0.5rem 1rem",
+              fontWeight: "800",
+              marginBottom: "1rem",
             }}
           >
             CIVIC CONTROL CENTER
@@ -143,9 +141,9 @@ export function AdminDashboard() {
 
           <h1
             style={{
-              fontSize: 'clamp(3rem, 6vw, 5.5rem)',
-              lineHeight: '0.9',
-              margin: 0
+              fontSize: "clamp(3rem, 6vw, 5.5rem)",
+              lineHeight: "0.9",
+              margin: 0,
             }}
           >
             DASHBOARD
@@ -153,124 +151,114 @@ export function AdminDashboard() {
 
           <p
             style={{
-              marginTop: '1rem',
-              maxWidth: '650px',
-              color: 'var(--text-secondary)',
-              fontSize: '1.05rem'
+              marginTop: "1rem",
+              maxWidth: "650px",
+              color: "var(--text-secondary)",
+              fontSize: "1.05rem",
             }}
           >
-            Monitor community complaints, track issue resolution,
-            and help prioritize problems reported by citizens.
+            Monitor community complaints, track issue resolution, and help
+            prioritize problems reported by citizens.
           </p>
         </div>
 
         {/* Statistics */}
         <section
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '1.25rem',
-            marginBottom: '3rem'
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: "1.25rem",
+            marginBottom: "3rem",
           }}
         >
           {/* Total Complaints */}
-          <div className="brutal-card yellow" style={{ padding: '1.5rem' }}>
+          <div className="brutal-card yellow" style={{ padding: "1.5rem" }}>
             <FileText size={28} />
 
             <div
               style={{
-                fontSize: '3rem',
-                fontWeight: '800',
-                fontFamily: 'var(--font-display)',
-                marginTop: '1rem'
+                fontSize: "3rem",
+                fontWeight: "800",
+                fontFamily: "var(--font-display)",
+                marginTop: "1rem",
               }}
             >
               {stats.total}
             </div>
 
-            <div style={{ fontWeight: '800' }}>
-              TOTAL COMPLAINTS
-            </div>
+            <div style={{ fontWeight: "800" }}>TOTAL COMPLAINTS</div>
           </div>
 
           {/* Active */}
-          <div className="brutal-card lime" style={{ padding: '1.5rem' }}>
+          <div className="brutal-card lime" style={{ padding: "1.5rem" }}>
             <AlertCircle size={28} />
 
             <div
               style={{
-                fontSize: '3rem',
-                fontWeight: '800',
-                fontFamily: 'var(--font-display)',
-                marginTop: '1rem'
+                fontSize: "3rem",
+                fontWeight: "800",
+                fontFamily: "var(--font-display)",
+                marginTop: "1rem",
               }}
             >
               {stats.active}
             </div>
 
-            <div style={{ fontWeight: '800' }}>
-              ACTIVE ISSUES
-            </div>
+            <div style={{ fontWeight: "800" }}>ACTIVE ISSUES</div>
           </div>
 
           {/* In Progress */}
-          <div className="brutal-card lavender" style={{ padding: '1.5rem' }}>
+          <div className="brutal-card lavender" style={{ padding: "1.5rem" }}>
             <Clock size={28} />
 
             <div
               style={{
-                fontSize: '3rem',
-                fontWeight: '800',
-                fontFamily: 'var(--font-display)',
-                marginTop: '1rem'
+                fontSize: "3rem",
+                fontWeight: "800",
+                fontFamily: "var(--font-display)",
+                marginTop: "1rem",
               }}
             >
               {stats.progress}
             </div>
 
-            <div style={{ fontWeight: '800' }}>
-              IN PROGRESS
-            </div>
+            <div style={{ fontWeight: "800" }}>IN PROGRESS</div>
           </div>
 
           {/* Resolved */}
-          <div className="brutal-card coral" style={{ padding: '1.5rem' }}>
+          <div className="brutal-card coral" style={{ padding: "1.5rem" }}>
             <CheckCircle size={28} />
 
             <div
               style={{
-                fontSize: '3rem',
-                fontWeight: '800',
-                fontFamily: 'var(--font-display)',
-                marginTop: '1rem'
+                fontSize: "3rem",
+                fontWeight: "800",
+                fontFamily: "var(--font-display)",
+                marginTop: "1rem",
               }}
             >
               {stats.resolved}
             </div>
 
-            <div style={{ fontWeight: '800' }}>
-              RESOLVED
-            </div>
+            <div style={{ fontWeight: "800" }}>RESOLVED</div>
           </div>
 
           {/* Votes */}
-          <div className="brutal-card" style={{ padding: '1.5rem' }}>
+          <div className="brutal-card" style={{ padding: "1.5rem" }}>
             <ThumbsUp size={28} />
 
             <div
               style={{
-                fontSize: '3rem',
-                fontWeight: '800',
-                fontFamily: 'var(--font-display)',
-                marginTop: '1rem'
+                fontSize: "3rem",
+                fontWeight: "800",
+                fontFamily: "var(--font-display)",
+                marginTop: "1rem",
               }}
             >
               {stats.totalVotes}
             </div>
 
-            <div style={{ fontWeight: '800' }}>
-              COMMUNITY VOTES
-            </div>
+            <div style={{ fontWeight: "800" }}>COMMUNITY VOTES</div>
           </div>
         </section>
 
@@ -278,21 +266,19 @@ export function AdminDashboard() {
         <section>
           <div
             style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '1.5rem'
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "1.5rem",
             }}
           >
-            <h2 style={{ margin: 0 }}>
-              RECENT COMPLAINTS
-            </h2>
+            <h2 style={{ margin: 0 }}>RECENT COMPLAINTS</h2>
 
             <span
               style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.8rem',
-                fontWeight: '700'
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.8rem",
+                fontWeight: "700",
               }}
             >
               {issues.length} REPORTS
@@ -301,9 +287,9 @@ export function AdminDashboard() {
 
           <div
             style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem'
+              display: "flex",
+              flexDirection: "column",
+              gap: "1rem",
             }}
           >
             {issues.map((issue) => (
@@ -311,18 +297,18 @@ export function AdminDashboard() {
                 key={issue.id}
                 className="brutal-card"
                 style={{
-                  padding: '1.5rem',
-                  display: 'grid',
-                  gridTemplateColumns: '1fr auto',
-                  gap: '1.5rem',
-                  alignItems: 'center'
+                  padding: "1.5rem",
+                  display: "grid",
+                  gridTemplateColumns: "1fr auto",
+                  gap: "1.5rem",
+                  alignItems: "center",
                 }}
               >
                 <div>
                   <h3
                     style={{
-                      marginBottom: '0.5rem',
-                      fontSize: '1.25rem'
+                      marginBottom: "0.5rem",
+                      fontSize: "1.25rem",
                     }}
                   >
                     {issue.title}
@@ -330,8 +316,8 @@ export function AdminDashboard() {
 
                   <p
                     style={{
-                      marginBottom: '0.75rem',
-                      color: 'var(--text-secondary)'
+                      marginBottom: "0.75rem",
+                      color: "var(--text-secondary)",
                     }}
                   >
                     {issue.location} • {issue.category}
@@ -339,41 +325,35 @@ export function AdminDashboard() {
 
                   <div
                     style={{
-                      display: 'flex',
-                      gap: '0.75rem',
-                      flexWrap: 'wrap',
-                      fontSize: '0.8rem',
-                      fontWeight: '800'
+                      display: "flex",
+                      gap: "0.75rem",
+                      flexWrap: "wrap",
+                      fontSize: "0.8rem",
+                      fontWeight: "800",
                     }}
                   >
-                    <span>
-                      PRIORITY: {issue.priority}
-                    </span>
+                    <span>PRIORITY: {issue.priority}</span>
 
-                    <span>
-                      STATUS: {issue.status}
-                    </span>
+                    <span>STATUS: {issue.status}</span>
 
-                    <span>
-                      ▲ {issue.upvotes}
-                    </span>
+                    <span>▲ {issue.upvotes}</span>
                   </div>
                 </div>
 
                 <div
                   style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.75rem',
-                    textAlign: 'right',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-end',
-                    gap: '0.6rem'
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "0.75rem",
+                    textAlign: "right",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                    gap: "0.6rem",
                   }}
                 >
                   <div>{issue.reporterName}</div>
 
-                  <div style={{ color: 'var(--text-secondary)' }}>
+                  <div style={{ color: "var(--text-secondary)" }}>
                     {issue.dateReported}
                   </div>
 
@@ -383,12 +363,12 @@ export function AdminDashboard() {
                       handleStatusChange(issue.id, e.target.value)
                     }
                     style={{
-                      border: '2px solid var(--primary-color)',
-                      padding: '0.5rem',
-                      fontWeight: '800',
-                      backgroundColor: 'var(--white)',
-                      cursor: 'pointer',
-                      minHeight: '44px'
+                      border: "2px solid var(--primary-color)",
+                      padding: "0.5rem",
+                      fontWeight: "800",
+                      backgroundColor: "var(--white)",
+                      cursor: "pointer",
+                      minHeight: "44px",
                     }}
                   >
                     <option value="OPEN">OPEN</option>
