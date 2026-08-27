@@ -45,6 +45,9 @@ export function Header() {
           <Link to="/profile" className={`nav-link ${isActive('/profile')}`}>
             Profile
           </Link>
+          <Link to="/admin" className={`nav-link ${isActive('/admin')}`}>
+            Admin
+          </Link>
         </nav>
 
         {/* Auth / CTA Button Group (Desktop) */}
@@ -125,6 +128,9 @@ export function Header() {
           </Link>
           <Link to="/profile" className="brutal-btn yellow" onClick={() => setMobileMenuOpen(false)}>
             My Profile
+          </Link>
+          <Link to="/admin" className="brutal-btn lime" onClick={() => setMobileMenuOpen(false)}>
+            Admin Dashboard
           </Link>
           
           <div style={{ height: '2px', backgroundColor: 'var(--primary-color)', margin: '1rem 0' }}></div>

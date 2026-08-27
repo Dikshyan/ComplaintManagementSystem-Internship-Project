@@ -30,6 +30,7 @@ export function Footer() {
               <li><Link to="/problems">Browse Issues</Link></li>
               <li><Link to="/submit">Report a Problem</Link></li>
               <li><Link to="/profile">My Profile</Link></li>
+              <li><Link to="/admin">Admin Dashboard</Link></li>
             </ul>
           </div>
 

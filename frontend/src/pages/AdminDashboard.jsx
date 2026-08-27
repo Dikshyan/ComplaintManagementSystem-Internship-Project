@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   FileText,
@@ -9,9 +10,12 @@ import {
   Clock,
   CheckCircle,
   ThumbsUp,
+  Home as HomeIcon
 } from "lucide-react";
+import { getStats, getIssues, updateIssueStatus, logout } from "../services/client";
 
 export function AdminDashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     total: 0,
     resolved: 0,
@@ -33,6 +37,12 @@ export function AdminDashboard() {
     setIssues(getIssues());
     setStats(getStats());
   };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
+
 
   return (
     <div
@@ -86,30 +96,25 @@ export function AdminDashboard() {
             gap: "0.75rem",
           }}
         >
-          <button className="admin-nav-item">
+          <button className="admin-nav-item" onClick={() => navigate("/admin")}>
             <LayoutDashboard size={18} />
             Dashboard
           </button>
 
-          <button className="admin-nav-item">
+          <button className="admin-nav-item" onClick={() => navigate("/problems")}>
             <FileText size={18} />
-            Complaints
+            Browse Complaints
           </button>
 
-          <button className="admin-nav-item">
-            <Users size={18} />
-            Users
-          </button>
-
-          <button className="admin-nav-item">
-            <Settings size={18} />
-            Settings
+          <button className="admin-nav-item" onClick={() => navigate("/")}>
+            <HomeIcon size={18} />
+            Public Home
           </button>
         </nav>
 
         {/* Logout */}
         <div style={{ marginTop: "auto" }}>
-          <button className="admin-nav-item">
+          <button className="admin-nav-item" onClick={handleLogout}>
             <LogOut size={18} />
             Logout
           </button>

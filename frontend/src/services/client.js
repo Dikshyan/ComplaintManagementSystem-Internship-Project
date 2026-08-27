@@ -200,3 +200,24 @@ export function getStats() {
   const totalVotes = issues.reduce((acc, i) => acc + (i.upvotes || 0), 0);
   return { total, resolved, progress, active, totalVotes };
 }
+
+export function updateIssueStatus(issueId, newStatus) {
+  const issues = getIssues();
+  const idx = issues.findIndex(i => i.id === issueId || i._id === issueId);
+  if (idx !== -1) {
+    issues[idx].status = newStatus;
+    if (!issues[idx].resolutionHistory) {
+      issues[idx].resolutionHistory = [];
+    }
+    issues[idx].resolutionHistory.push({
+      status: newStatus,
+      description: `Status updated to ${newStatus} by Admin.`,
+      date: new Date().toISOString().split('T')[0]
+    });
+    localStorage.setItem(INITIAL_PROBLEMS_KEY, JSON.stringify(issues));
+    toast.success(`Status updated to ${newStatus}`);
+    return issues[idx];
+  }
+  return null;
+}
+

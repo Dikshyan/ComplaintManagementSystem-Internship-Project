@@ -3,7 +3,8 @@ const express = require("express");
 const cors = require("cors");
 const { connectDB } = require("./db/db");
 const authRoutes = require("./routes/authRoutes");
-const complaintRoutes = require("./routes/complaintRoutes")
+const complaintRoutes = require("./routes/complaintRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -28,6 +29,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/complaint", complaintRoutes);
 
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
