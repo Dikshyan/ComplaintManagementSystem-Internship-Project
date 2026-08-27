@@ -163,30 +163,32 @@ export function addComment(issueId, text) {
   return newComment;
 }
 
-export function submitIssue(title, description, category, location, priority) {
-  const issues = getIssues();
-  const currentUser = JSON.parse(localStorage.getItem('currentUser')) || { fullName: 'Guest' };
-  const newId = `ISS-${String(issues.length + 1).padStart(3, '0')}`;
-  const newIssue = {
-    id: newId,
-    title,
-    description,
-    category,
-    location,
-    priority,
-    status: 'OPEN',
-    upvotes: 1,
-    reporterName: currentUser.fullName || currentUser.name,
-    dateReported: new Date().toISOString().split('T')[0],
-    comments: [],
-    resolutionHistory: [{ status: 'OPEN', description: `Issue submitted by ${currentUser.fullName || currentUser.name}.`, date: new Date().toISOString().split('T')[0] }]
-  };
-  issues.unshift(newIssue);
-  localStorage.setItem(INITIAL_PROBLEMS_KEY, JSON.stringify(issues));
-  currentUser.upvotedIssues = [...(currentUser.upvotedIssues || []), newId];
-  localStorage.setItem('currentUser', JSON.stringify(currentUser));
-  toast.success('Issue submitted');
-  return newIssue;
+export async function submitIssue(title, description, category, location, priority, attachments = []) {
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+        toast.error("Please log in to submit a complaint.");
+        throw new Error("Authentication required");
+    }
+
+    const data = await requestJson("/complaint", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            title,
+            description,
+            category,
+            location,
+            priority,
+            attachments
+        })
+    });
+
+    toast.success("Complaint submitted successfully");
+
+    return data.complaint;
 }
 
 export function getStats() {
@@ -198,3 +200,24 @@ export function getStats() {
   const totalVotes = issues.reduce((acc, i) => acc + (i.upvotes || 0), 0);
   return { total, resolved, progress, active, totalVotes };
 }
+
+export function updateIssueStatus(issueId, newStatus) {
+  const issues = getIssues();
+  const idx = issues.findIndex(i => i.id === issueId || i._id === issueId);
+  if (idx !== -1) {
+    issues[idx].status = newStatus;
+    if (!issues[idx].resolutionHistory) {
+      issues[idx].resolutionHistory = [];
+    }
+    issues[idx].resolutionHistory.push({
+      status: newStatus,
+      description: `Status updated to ${newStatus} by Admin.`,
+      date: new Date().toISOString().split('T')[0]
+    });
+    localStorage.setItem(INITIAL_PROBLEMS_KEY, JSON.stringify(issues));
+    toast.success(`Status updated to ${newStatus}`);
+    return issues[idx];
+  }
+  return null;
+}
+
