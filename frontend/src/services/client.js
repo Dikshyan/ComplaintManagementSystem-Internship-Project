@@ -153,18 +153,38 @@ export function getIssueById(id) {
   return issues.find(issue => issue.id === id || issue._id === id);
 }
 
-export function upvoteIssue(id) {
+export async function upvoteIssue(id) {
   const issues = getIssues();
   const currentUser = JSON.parse(localStorage.getItem('currentUser')) || { upvotedIssues: [] };
   const idx = issues.findIndex(i => i.id === id || i._id === id);
   if (idx === -1) return null;
   const isUpvoted = (currentUser.upvotedIssues || []).includes(id);
+  const direction = isUpvoted ? 'down' : 'up';
+
+  // Call backend if MongoDB ObjectId format
+  if (id && id.length === 24) {
+    try {
+      const data = await requestJson(`/complaint/${id}/vote`, {
+        method: 'PATCH',
+        body: JSON.stringify({ direction })
+      });
+      issues[idx].upvotes = data.voteCount;
+    } catch (err) {
+      // Fall back to local toggle on failure
+      issues[idx].upvotes = isUpvoted
+        ? Math.max(0, (issues[idx].upvotes || 1) - 1)
+        : (issues[idx].upvotes || 0) + 1;
+    }
+  } else {
+    issues[idx].upvotes = isUpvoted
+      ? Math.max(0, (issues[idx].upvotes || 1) - 1)
+      : (issues[idx].upvotes || 0) + 1;
+  }
+
   if (isUpvoted) {
-    issues[idx].upvotes = Math.max(0, (issues[idx].upvotes || 1) - 1);
     currentUser.upvotedIssues = currentUser.upvotedIssues.filter(x => x !== id);
     toast.info('Removed your vote');
   } else {
-    issues[idx].upvotes = (issues[idx].upvotes || 0) + 1;
     currentUser.upvotedIssues = [...(currentUser.upvotedIssues || []), id];
     toast.success('Thanks — your vote was recorded');
   }
@@ -178,8 +198,33 @@ export function hasUpvoted(id) {
   return (currentUser.upvotedIssues || []).includes(id);
 }
 
-export function addComment(issueId, text) {
+export async function addComment(issueId, text) {
   if (!text || !text.trim()) return null;
+  const token = localStorage.getItem('authToken');
+
+  // Call backend if authenticated and MongoDB ObjectId
+  if (token && issueId && issueId.length === 24) {
+    try {
+      const data = await requestJson(`/complaint/${issueId}/comments`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text })
+      });
+      // Update localStorage cache
+      const issues = getIssues();
+      const idx = issues.findIndex(i => i.id === issueId || i._id === issueId);
+      if (idx !== -1) {
+        issues[idx].comments = [...(issues[idx].comments || []), data.comment];
+        localStorage.setItem(INITIAL_PROBLEMS_KEY, JSON.stringify(issues));
+      }
+      toast.success('Comment added');
+      return data.comment;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  // Guest fallback: localStorage only
   const issues = getIssues();
   const currentUser = JSON.parse(localStorage.getItem('currentUser')) || { fullName: 'Guest' };
   const idx = issues.findIndex(i => i.id === issueId || i._id === issueId);
@@ -230,18 +275,60 @@ export async function submitIssue(title, description, category, location, priori
   return data.complaint;
 }
 
-export function getStats() {
-  const issues = getIssues();
-  const total = issues.length;
-  const resolved = issues.filter(i => i.status === 'Resolved' || i.status === 'RESOLVED').length;
-  const progress = issues.filter(i => i.status === 'In Progress' || i.status === 'IN_PROGRESS' || i.status === 'Under Review').length;
-  const active = total - resolved;
-  const totalVotes = issues.reduce((acc, i) => acc + (i.upvotes || i.voteCount || 0), 0);
-  return { total, resolved, progress, active, totalVotes };
+export async function getStats(providedIssues = null) {
+  if (providedIssues && Array.isArray(providedIssues)) {
+    const total = providedIssues.length;
+    const resolved = providedIssues.filter(i => (i.status || '').toLowerCase() === 'resolved').length;
+    const progress = providedIssues.filter(i => {
+      const s = (i.status || '').toLowerCase();
+      return s === 'in progress' || s === 'under review' || s === 'pending';
+    }).length;
+    const active = total - resolved;
+    const totalVotes = providedIssues.reduce((acc, i) => acc + (i.upvotes || i.voteCount || 0), 0);
+    return { total, resolved, progress, active, totalVotes };
+  }
+
+  try {
+    const data = await requestJson('/complaint/stats');
+    if (data && data.stats) {
+      return data.stats;
+    }
+  } catch (err) {
+    // ignore
+  }
+
+  // Fallback: derive directly from live fetched complaints
+  try {
+    const liveIssues = await fetchComplaintsApi();
+    const total = liveIssues.length;
+    const resolved = liveIssues.filter(i => (i.status || '').toLowerCase() === 'resolved').length;
+    const progress = liveIssues.filter(i => {
+      const s = (i.status || '').toLowerCase();
+      return s === 'in progress' || s === 'under review' || s === 'pending';
+    }).length;
+    const active = total - resolved;
+    const totalVotes = liveIssues.reduce((acc, i) => acc + (i.upvotes || i.voteCount || 0), 0);
+    return { total, resolved, progress, active, totalVotes };
+  } catch (e) {
+    return { total: 0, resolved: 0, progress: 0, active: 0, totalVotes: 0 };
+  }
 }
 
 export async function updateIssueStatus(issueId, newStatus) {
-  // Update locally first for immediate UX response
+  // Send update to backend API first if MongoDB ObjectId format
+  if (issueId && issueId.length === 24) {
+    try {
+      await requestJson(`/complaint/${issueId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus })
+      });
+    } catch (err) {
+      // Backend failed — don't update local state
+      return getIssues();
+    }
+  }
+
+  // Only update localStorage AFTER backend succeeds
   const issues = getIssues();
   const idx = issues.findIndex(i => i.id === issueId || i._id === issueId);
   if (idx !== -1) {
@@ -255,18 +342,6 @@ export async function updateIssueStatus(issueId, newStatus) {
       date: new Date().toISOString().split('T')[0]
     });
     localStorage.setItem(INITIAL_PROBLEMS_KEY, JSON.stringify(issues));
-  }
-
-  // Send update to backend API if ID matches MongoDB ObjectId format
-  if (issueId && issueId.length === 24) {
-    try {
-      await requestJson(`/complaint/${issueId}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: newStatus })
-      });
-    } catch (err) {
-      /* Handled by requestJson toast */
-    }
   }
 
   toast.success(`Status updated to ${newStatus}`);

@@ -1,23 +1,23 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Syne:wght@700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
 
 :root {
-  --bg-color: #F5F1E8;
-  --primary-color: #111111;
-  --coral: #FF5A36;
-  --yellow: #FFD400;
-  --lime: #B8E986;
-  --lavender: #B9A7FF;
+  --bg-color: #F4F6F9;
+  --primary-color: #1B2A4A;
+  --coral: #D35400;
+  --yellow: #E8A317;
+  --lime: #27865A;
+  --lavender: #5B6D8E;
   --white: #FFFFFF;
-  --text-secondary: #5F5F5F;
-  --border-color: #111111;
-  --border-width: 3px;
+  --text-secondary: #4A5568;
+  --border-color: #1B2A4A;
+  --border-width: 2px;
   
-  --font-display: 'Syne', sans-serif;
-  --font-sans: 'Space Grotesk', sans-serif;
+  --font-display: 'DM Serif Display', serif;
+  --font-sans: 'DM Sans', sans-serif;
   --font-body: 'Inter', sans-serif;
-  --font-mono: 'Space Mono', monospace;
+  --font-mono: 'JetBrains Mono', monospace;
 
-  --nav-height: 80px;
+  --nav-height: 72px;
 }
 
 * {
@@ -38,7 +38,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 800;
   line-height: 1.1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 p {
@@ -52,7 +52,7 @@ a {
   font-weight: 700;
 }
 
-/* Neo-Brutalist Layout & Grid Components */
+/* Layout & Grid Components */
 .container {
   width: 100%;
   max-width: 1200px;
@@ -70,6 +70,7 @@ a {
   z-index: 100;
   display: flex;
   align-items: center;
+  box-shadow: 0 1px 8px rgba(27, 42, 74, 0.06);
 }
 
 .header .container {
@@ -83,22 +84,23 @@ a {
   align-items: center;
   gap: 0.5rem;
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 800;
   color: var(--primary-color);
 }
 
 .logo-icon {
   background-color: var(--coral);
-  width: 36px;
-  height: 36px;
+  color: var(--white);
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 2px solid var(--primary-color);
+  border-radius: 6px;
   font-family: var(--font-mono);
   font-weight: bold;
-  transform: rotate(-3deg);
 }
 
 .nav-links {
@@ -109,7 +111,7 @@ a {
 
 .nav-link {
   font-family: var(--font-sans);
-  font-size: 1rem;
+  font-size: 0.95rem;
   padding: 0.25rem 0.5rem;
   position: relative;
 }
@@ -120,7 +122,7 @@ a {
   bottom: -4px;
   left: 0;
   width: 0;
-  height: 3px;
+  height: 2px;
   background-color: var(--coral);
   transition: width 0.2s ease;
 }
@@ -134,7 +136,7 @@ a {
   background-color: var(--primary-color);
 }
 
-/* Neo-Brutalist Buttons */
+/* Buttons */
 .brutal-btn {
   font-family: var(--font-sans);
   font-weight: 700;
@@ -143,22 +145,23 @@ a {
   background-color: var(--white);
   color: var(--primary-color);
   border: var(--border-width) solid var(--primary-color);
-  box-shadow: 4px 4px 0px 0px var(--primary-color);
+  border-radius: 6px;
+  box-shadow: 3px 3px 0px 0px var(--primary-color);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: all 0.1s ease;
+  transition: all 0.15s ease;
 }
 
 .brutal-btn:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px 0px var(--primary-color);
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px 0px var(--primary-color);
 }
 
 .brutal-btn:active {
-  transform: translate(2px, 2px);
+  transform: translate(1px, 1px);
   box-shadow: 2px 2px 0px 0px var(--primary-color);
 }
 
@@ -168,7 +171,7 @@ a {
 }
 
 .brutal-btn.primary:hover {
-  background-color: #ff6c4e;
+  background-color: #c04a00;
 }
 
 .brutal-btn.yellow {
@@ -177,10 +180,12 @@ a {
 
 .brutal-btn.lime {
   background-color: var(--lime);
+  color: var(--white);
 }
 
 .brutal-btn.lavender {
   background-color: var(--lavender);
+  color: var(--white);
 }
 
 .brutal-btn.small {
@@ -204,15 +209,16 @@ a {
 .brutal-card {
   background-color: var(--white);
   border: var(--border-width) solid var(--primary-color);
-  box-shadow: 6px 6px 0px 0px var(--primary-color);
+  border-radius: 8px;
+  box-shadow: 4px 4px 0px 0px var(--primary-color);
   padding: 2rem;
   position: relative;
   transition: all 0.15s ease;
 }
 
 .brutal-card:hover {
-  transform: translate(-3px, -3px);
-  box-shadow: 9px 9px 0px 0px var(--primary-color);
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px var(--primary-color);
 }
 
 .brutal-card.coral { background-color: var(--coral); }
@@ -230,14 +236,15 @@ a {
   background-color: var(--white);
   color: var(--primary-color);
   border: var(--border-width) solid var(--primary-color);
-  box-shadow: 3px 3px 0px 0px var(--primary-color);
+  border-radius: 6px;
+  box-shadow: 2px 2px 0px 0px var(--primary-color);
   outline: none;
   transition: all 0.1s ease;
 }
 
 .brutal-input:focus {
   transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0px 0px var(--coral);
+  box-shadow: 3px 3px 0px 0px var(--coral);
   border-color: var(--primary-color);
 }
 
@@ -249,18 +256,19 @@ a {
   font-size: 1rem;
   background-color: var(--white);
   border: var(--border-width) solid var(--primary-color);
-  box-shadow: 3px 3px 0px 0px var(--primary-color);
+  border-radius: 6px;
+  box-shadow: 2px 2px 0px 0px var(--primary-color);
   outline: none;
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%231B2A4A' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
   background-repeat: no-repeat;
   background-position: right 10px center;
 }
 
 .brutal-select:focus {
   transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0px 0px var(--coral);
+  box-shadow: 3px 3px 0px 0px var(--coral);
 }
 
 /* Badges */
@@ -270,6 +278,7 @@ a {
   font-size: 0.75rem;
   padding: 0.25rem 0.5rem;
   border: 2px solid var(--primary-color);
+  border-radius: 4px;
   text-transform: uppercase;
   display: inline-block;
 }
@@ -286,7 +295,7 @@ a {
 
 .badge.status-resolved {
   background-color: var(--lime);
-  color: var(--primary-color);
+  color: var(--white);
 }
 
 .badge.priority-high {
@@ -301,7 +310,7 @@ a {
 
 .badge.priority-low {
   background-color: var(--lime);
-  color: var(--primary-color);
+  color: var(--white);
 }
 
 /* Marquee Alert */
@@ -316,9 +325,9 @@ a {
 
 .marquee-content {
   display: inline-block;
-  animation: marquee 20s linear infinite;
+  animation: marquee 25s linear infinite;
   font-family: var(--font-mono);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: bold;
 }
 
@@ -351,7 +360,7 @@ a {
 
 .section-subtitle {
   font-family: var(--font-sans);
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 600;
   max-width: 600px;
   margin-top: 0.5rem;
@@ -386,7 +395,7 @@ a {
 
 .footer-links h4 {
   font-family: var(--font-sans);
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   margin-bottom: 1.25rem;
   text-transform: uppercase;
 }
@@ -421,7 +430,8 @@ a {
 
 /* Utility Animations */
 .hover-rotate:hover {
-  transform: rotate(-1deg);
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px var(--primary-color);
 }
 
 /* Custom transitions for pages */
@@ -445,6 +455,7 @@ a {
 ::-webkit-scrollbar-thumb {
   background: var(--primary-color);
   border: 2px solid var(--bg-color);
+  border-radius: 5px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--coral);

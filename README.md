@@ -1,4 +1,4 @@
-# Public Complaint Management Platform
+# The Civic Voice — Making Local Voices Count
 
 A public-oriented complaint management platform that allows citizens to report community issues and enables others to support those complaints through voting and discussion. Authorities or staff can review, assign, track, and resolve complaints while maintaining a transparent history of status updates.
 

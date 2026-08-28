@@ -153,7 +153,7 @@ export function LoginRegister() {
                 CITIZEN FORUM
               </span>
               <span className="badge" style={{ backgroundColor: 'var(--lime)', color: 'var(--primary-color)', fontWeight: '800' }}>
-                #FIXMYSTREET
+                #THECIVICVOICE
               </span>
             </div>
             
@@ -529,7 +529,7 @@ export function LoginRegister() {
             <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
               {isLoginView ? (
                 <>
-                  New to FixMyStreet?{' '}
+                  New to The Civic Voice?{' '}
                   <Link to="/register" style={{ color: 'var(--coral)', textDecoration: 'underline' }}>
                     Create an account
                   </Link>

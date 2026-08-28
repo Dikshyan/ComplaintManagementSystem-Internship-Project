@@ -7,9 +7,9 @@ export function ProblemCard({ problem, onVote }) {
   const [votes, setVotes] = useState(problem.upvotes);
   const [isUpvoted, setIsUpvoted] = useState(hasUpvoted(problem.id));
 
-  const handleVote = (e) => {
+  const handleVote = async (e) => {
     e.preventDefault(); // Stop navigation if clicked inside card Link
-    const result = upvoteIssue(problem.id);
+    const result = await upvoteIssue(problem.id);
     if (result) {
       setVotes(result.issue.upvotes);
       setIsUpvoted(result.isUpvoted);

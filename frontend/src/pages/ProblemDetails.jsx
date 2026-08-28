@@ -40,19 +40,19 @@ export function ProblemDetails() {
     }
   }, [location, problem]);
 
-  const handleVote = () => {
-    const result = upvoteIssue(id);
+  const handleVote = async () => {
+    const result = await upvoteIssue(id);
     if (result) {
       setVotes(result.issue.upvotes);
       setIsUpvoted(result.isUpvoted);
     }
   };
 
-  const handleCommentSubmit = (e) => {
+  const handleCommentSubmit = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
 
-    const newComment = addComment(id, commentText);
+    const newComment = await addComment(id, commentText);
     if (newComment) {
       setComments([...comments, newComment]);
       setCommentText('');
