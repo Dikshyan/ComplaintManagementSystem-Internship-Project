@@ -6,35 +6,51 @@ import { ProblemCard } from '../components/ProblemCard';
 
 export function Home() {
   const [trendingIssues, setTrendingIssues] = useState([]);
+  const [allIssues, setAllIssues] = useState([]);
   const [stats, setStats] = useState({ total: 0, resolved: 0, progress: 0, active: 0, totalVotes: 0 });
 
-  useEffect(() => {
-    const loadHomeData = async () => {
-      const issues = await fetchComplaintsApi();
-      const sorted = [...issues].sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0)).slice(0, 3);
-      setTrendingIssues(sorted);
-      setStats(getStats());
-    };
-    loadHomeData();
-  }, []);
-
-  const handleVoteToggle = () => {
-    // Refresh stats if votes changed on the homepage cards
-    setStats(getStats());
+  const loadHomeData = async () => {
+    const issues = await fetchComplaintsApi();
+    setAllIssues(issues);
+    const sorted = [...issues].sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0)).slice(0, 3);
+    setTrendingIssues(sorted);
+    const freshStats = await getStats(issues);
+    setStats(freshStats);
   };
 
+  useEffect(() => {
+    loadHomeData();
+    // Poll every 10 seconds for real-time synchronization
+    const interval = setInterval(loadHomeData, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleVoteToggle = async () => {
+    await loadHomeData();
+  };
+
+  // Build real marquee strings from recent complaints
+  const marqueeItems = allIssues.slice(0, 6).map(issue => {
+    if (issue.status === 'Resolved' || issue.status === 'RESOLVED') {
+      return `🎉 RESOLVED: ${issue.title} — ${issue.location}`;
+    }
+    if (issue.upvotes > 3) {
+      return `⚡ TRENDING: ${issue.title} — ${issue.upvotes} votes — ${issue.location}`;
+    }
+    return `🚨 REPORTED: ${issue.title} — ${issue.location}`;
+  });
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '5rem' }}>
+    <div>
       {/* 1. Hero Section */}
       <section style={{ 
         backgroundColor: 'var(--white)',
         borderBottom: 'var(--border-width) solid var(--primary-color)',
-        padding: '5rem 0',
+        padding: '5rem 0 4rem',
         position: 'relative',
         overflow: 'hidden'
       }}>
-        <div className="container" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '3rem', alignItems: 'center' }}>
-          {/* Hero Left */}
+        <div className="container" style={{ maxWidth: '800px' }}>
           <div>
             <div style={{
               display: 'inline-flex',
@@ -46,7 +62,6 @@ export function Home() {
               fontFamily: 'var(--font-mono)',
               fontWeight: 'bold',
               fontSize: '0.9rem',
-              transform: 'rotate(-1deg)',
               marginBottom: '2rem'
             }}>
               <Zap size={16} fill="var(--primary-color)" />
@@ -56,14 +71,24 @@ export function Home() {
             <h1 style={{ 
               fontSize: 'clamp(3rem, 7vw, 5.5rem)', 
               lineHeight: '0.95', 
-              marginBottom: '2rem',
+              marginBottom: '1.5rem',
               textTransform: 'uppercase'
             }}>
               Fixing our <span style={{ color: 'var(--coral)', textDecoration: 'underline' }}>neighborhoods</span>, one vote at a time.
             </h1>
+
+            <p style={{ 
+              fontSize: '1.15rem', 
+              color: 'var(--coral)', 
+              fontWeight: '700',
+              fontFamily: 'var(--font-sans)',
+              marginBottom: '1rem'
+            }}>
+              Making Local Voices Count
+            </p>
             
             <p style={{ 
-              fontSize: '1.25rem', 
+              fontSize: '1.15rem', 
               color: 'var(--text-secondary)', 
               maxWidth: '600px', 
               marginBottom: '3rem',
@@ -83,115 +108,85 @@ export function Home() {
               </Link>
             </div>
           </div>
-
-          {/* Hero Right: Neo-Brutalist Visual Graphic */}
-          <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }} className="hero-graphic">
-            <div className="brutal-card coral" style={{ 
-              transform: 'rotate(2deg)',
-              padding: '2.5rem',
-              maxWidth: '380px',
-              zIndex: 2
-            }}>
-              <h2 style={{ fontSize: '2.2rem', color: 'var(--white)', marginBottom: '1rem' }}>REPORTS FILED TODAY</h2>
-              <div style={{ fontSize: '5rem', fontWeight: '800', fontFamily: 'var(--font-display)', color: 'var(--white)', lineHeight: '1', marginBottom: '1rem' }}>
-                +14
-              </div>
-              <div style={{ borderTop: '2px solid white', paddingTop: '1rem', color: 'var(--white)', fontWeight: '600' }}>
-                📍 Indiranagar Ward led community resolved issues this week.
-              </div>
-            </div>
-            
-            {/* Decortive floating card behind */}
-            <div className="brutal-card lime" style={{ 
-              position: 'absolute',
-              top: '30px',
-              left: '20px',
-              width: '100%',
-              height: '100%',
-              zIndex: 1,
-              transform: 'rotate(-4deg)',
-              pointerEvents: 'none'
-            }}></div>
-          </div>
         </div>
       </section>
 
-      {/* 2. Stats Marquee Ribbon */}
-      <div className="marquee-container" style={{ margin: '-5rem 0' }}>
-        <div className="marquee-content">
-          <span className="marquee-item">⚡ LIVE ACTIVITY Ticker: Issue #ISS-002 Upvoted by 5 citizens in Silk Board</span>
-          <span className="marquee-item">🚨 NEW ISSUE: Pothole reported on Outer Ring Road, Bellandur</span>
-          <span className="marquee-item">🎉 RESOLVED: Water line leak patched at HSR Sector 7</span>
-          <span className="marquee-item">⚡ LIVE ACTIVITY Ticker: Issue #ISS-002 Upvoted by 5 citizens in Silk Board</span>
-          <span className="marquee-item">🚨 NEW ISSUE: Pothole reported on Outer Ring Road, Bellandur</span>
-          <span className="marquee-item">🎉 RESOLVED: Water line leak patched at HSR Sector 7</span>
-        </div>
-      </div>
-
-      {/* 3. Trending Issues Grid */}
-      <section className="container">
-        <div className="section-header">
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--coral)', fontWeight: '800', fontFamily: 'var(--font-mono)' }}>
-              <Flame fill="var(--coral)" size={18} />
-              <span>COMMUNITY HOTSPOTS</span>
-            </div>
-            <h2 className="section-title">TRENDING ISSUES</h2>
-            <p className="section-subtitle">Complaints gaining the most support from your neighbors. Upvote to bring them closer to official resolution.</p>
-          </div>
-          <Link to="/problems" className="brutal-btn small">
-            <span>View All {stats.total} Problems</span>
-          </Link>
-        </div>
-
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
-          gap: '2.5rem' 
+      {/* 2. Stats Strip — horizontal bar */}
+      <section className="stats-strip" style={{
+        backgroundColor: 'var(--primary-color)',
+        borderBottom: 'var(--border-width) solid var(--primary-color)',
+        padding: '2.5rem 0',
+        margin: 0
+      }}>
+        <div className="container" style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '2rem',
+          textAlign: 'center'
         }}>
-          {trendingIssues.map((issue) => (
-            <ProblemCard key={issue.id} problem={issue} onVote={handleVoteToggle} />
-          ))}
+          <div>
+            <div style={{ fontSize: 'clamp(2rem, 3.5vw, 3rem)', fontWeight: '800', fontFamily: 'var(--font-display)', color: 'var(--white)', lineHeight: 1.1 }}>{stats.total}</div>
+            <div style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--yellow)', marginTop: '0.35rem' }}>Complaints Registered</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 'clamp(2rem, 3.5vw, 3rem)', fontWeight: '800', fontFamily: 'var(--font-display)', color: 'var(--lime)', lineHeight: 1.1 }}>{stats.resolved}</div>
+            <div style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--yellow)', marginTop: '0.35rem' }}>Resolved</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 'clamp(2rem, 3.5vw, 3rem)', fontWeight: '800', fontFamily: 'var(--font-display)', color: 'var(--coral)', lineHeight: 1.1 }}>{stats.active}</div>
+            <div style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--yellow)', marginTop: '0.35rem' }}>Active / In Progress</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 'clamp(2rem, 3.5vw, 3rem)', fontWeight: '800', fontFamily: 'var(--font-display)', color: 'var(--white)', lineHeight: 1.1 }}>{stats.totalVotes}</div>
+            <div style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--yellow)', marginTop: '0.35rem' }}>Community Votes</div>
+          </div>
         </div>
       </section>
 
-      {/* 4. Community Statistics Panel */}
-      <section style={{ backgroundColor: 'var(--white)', borderTop: 'var(--border-width) solid var(--primary-color)', borderBottom: 'var(--border-width) solid var(--primary-color)', padding: '5rem 0' }}>
-        <div className="container">
-          <div className="section-header" style={{ borderBottom: 'none', marginBottom: '4rem', textAlign: 'center', justifyContent: 'center' }}>
+      {/* 3. Live Activity Marquee — real data */}
+      {marqueeItems.length > 0 && (
+        <div className="marquee-container" style={{ margin: 0 }}>
+          <div className="marquee-content">
+            {marqueeItems.map((item, i) => (
+              <span key={i} className="marquee-item">{item}</span>
+            ))}
+            {marqueeItems.map((item, i) => (
+              <span key={`dup-${i}`} className="marquee-item">{item}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Sections Container */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '5rem', marginTop: '4rem' }}>
+        {/* 4. Trending Issues Grid */}
+        <section className="container">
+          <div className="section-header">
             <div>
-              <h2 className="section-title">OUR IMPACT IN NUMBERS</h2>
-              <p className="section-subtitle" style={{ margin: '0 auto' }}>Transparent statistics showing how citizens are organizing and making real change happen.</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--coral)', fontWeight: '800', fontFamily: 'var(--font-mono)' }}>
+                <Flame fill="var(--coral)" size={18} />
+                <span>COMMUNITY HOTSPOTS</span>
+              </div>
+              <h2 className="section-title">TRENDING ISSUES</h2>
+              <p className="section-subtitle">Complaints gaining the most support from your neighbors. Upvote to bring them closer to official resolution.</p>
             </div>
+            <Link to="/problems" className="brutal-btn small">
+              <span>View All {stats.total} Problems</span>
+            </Link>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '2.5rem' }}>
-            {/* Stat Item 1 */}
-            <div className="brutal-card yellow" style={{ textAlign: 'center', padding: '2.5rem' }}>
-              <h3 style={{ fontSize: '3.5rem', fontFamily: 'var(--font-display)', marginBottom: '0.5rem' }}>{stats.total}</h3>
-              <p style={{ fontWeight: '700', textTransform: 'uppercase', fontSize: '0.9rem', color: 'var(--primary-color)' }}>Issues Reported</p>
-            </div>
-
-            {/* Stat Item 2 */}
-            <div className="brutal-card lime" style={{ textAlign: 'center', padding: '2.5rem' }}>
-              <h3 style={{ fontSize: '3.5rem', fontFamily: 'var(--font-display)', marginBottom: '0.5rem' }}>{stats.resolved}</h3>
-              <p style={{ fontWeight: '700', textTransform: 'uppercase', fontSize: '0.9rem', color: 'var(--primary-color)' }}>Fully Resolved</p>
-            </div>
-
-            {/* Stat Item 3 */}
-            <div className="brutal-card lavender" style={{ textAlign: 'center', padding: '2.5rem' }}>
-              <h3 style={{ fontSize: '3.5rem', fontFamily: 'var(--font-display)', marginBottom: '0.5rem' }}>{stats.active}</h3>
-              <p style={{ fontWeight: '700', textTransform: 'uppercase', fontSize: '0.9rem', color: 'var(--primary-color)' }}>Active & In Review</p>
-            </div>
-
-            {/* Stat Item 4 */}
-            <div className="brutal-card coral" style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--white)' }}>
-              <h3 style={{ fontSize: '3.5rem', fontFamily: 'var(--font-display)', marginBottom: '0.5rem', color: 'var(--white)' }}>{stats.totalVotes}</h3>
-              <p style={{ fontWeight: '700', textTransform: 'uppercase', fontSize: '0.9rem', color: 'var(--white)' }}>Community Votes</p>
-            </div>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
+            gap: '2.5rem' 
+          }}>
+            {trendingIssues.map((issue) => (
+              <ProblemCard key={issue.id} problem={issue} onVote={handleVoteToggle} />
+            ))}
           </div>
-        </div>
-      </section>
+        </section>
 
       {/* 5. How It Works Section */}
       <section className="container">
@@ -258,7 +253,7 @@ export function Home() {
               marginBottom: '1.5rem'
             }}>03</div>
             <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', textTransform: 'uppercase' }}>Get Attention</h3>
-            <p style={{ fontSize: '0.95rem' }}>Highly upvoted issues automatically generate local BBMP notifications and local ward reports.</p>
+            <p style={{ fontSize: '0.95rem' }}>Highly upvoted issues automatically generate civic notifications and local ward reports.</p>
           </div>
 
           {/* Step 4 */}
@@ -284,7 +279,7 @@ export function Home() {
 
       {/* 6. Final CTA Section */}
       <section className="container" style={{ marginBottom: '4rem' }}>
-        <div className="brutal-card yellow hover-rotate" style={{ 
+        <div className="brutal-card yellow" style={{ 
           padding: '4rem 3rem', 
           display: 'grid', 
           gridTemplateColumns: '1.3fr 0.7fr',
@@ -307,18 +302,16 @@ export function Home() {
           </div>
         </div>
       </section>
+      </div>
       
       <style>{`
         @media (max-width: 768px) {
-          .hero-graphic {
-            display: none !important;
-          }
-          .container {
-            grid-template-columns: 1fr !important;
-          }
           .brutal-card.yellow {
             grid-template-columns: 1fr !important;
             padding: 2.5rem 1.5rem !important;
+          }
+          .stats-divider {
+            display: none !important;
           }
         }
       `}</style>

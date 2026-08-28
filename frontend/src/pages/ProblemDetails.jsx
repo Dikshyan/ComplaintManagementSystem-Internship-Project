@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, MapPin, Calendar, User, MessageSquare, ArrowUp, Send, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
-import { getIssueById, upvoteIssue, hasUpvoted, addComment } from '../services/client';
+import { getIssueById, upvoteIssue, hasUpvoted, addComment, fetchComplaintsApi } from '../services/client';
 
 export function ProblemDetails() {
   const { id } = useParams();
@@ -15,13 +15,14 @@ export function ProblemDetails() {
   const [comments, setComments] = useState([]);
 
   // Load problem details
-  const loadProblemDetails = () => {
+  const loadProblemDetails = async () => {
+    await fetchComplaintsApi();
     const data = getIssueById(id);
     if (data) {
       setProblem(data);
-      setVotes(data.upvotes);
+      setVotes(data.upvotes || data.voteCount || 0);
       setComments(data.comments || []);
-      setIsUpvoted(hasUpvoted(data.id));
+      setIsUpvoted(hasUpvoted(data.id || data._id));
     }
   };
 
@@ -39,19 +40,19 @@ export function ProblemDetails() {
     }
   }, [location, problem]);
 
-  const handleVote = () => {
-    const result = upvoteIssue(id);
+  const handleVote = async () => {
+    const result = await upvoteIssue(id);
     if (result) {
       setVotes(result.issue.upvotes);
       setIsUpvoted(result.isUpvoted);
     }
   };
 
-  const handleCommentSubmit = (e) => {
+  const handleCommentSubmit = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
 
-    const newComment = addComment(id, commentText);
+    const newComment = await addComment(id, commentText);
     if (newComment) {
       setComments([...comments, newComment]);
       setCommentText('');

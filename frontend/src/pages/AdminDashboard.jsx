@@ -65,7 +65,7 @@ export function AdminDashboard() {
     setLoading(true);
     const complaints = await fetchComplaintsApi();
     setIssues(complaints);
-    setStats(getStats());
+    setStats(await getStats());
     
     const users = await fetchUsersApi();
     setUsersList(users);
@@ -208,7 +208,7 @@ export function AdminDashboard() {
                 paddingBottom: "1.5rem",
               }}
             >
-              FIXMYSTREET
+              THE CIVIC VOICE
               <div
                 style={{
                   fontFamily: "var(--font-mono)",

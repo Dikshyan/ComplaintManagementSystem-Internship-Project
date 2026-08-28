@@ -11,14 +11,14 @@ export function Footer() {
           <div className="footer-brand">
             <Link to="/" className="logo" style={{ marginBottom: '1.5rem', display: 'inline-flex' }}>
               <div className="logo-icon">#</div>
-              <span>FIXMYSTREET</span>
+              <span>THE CIVIC VOICE</span>
             </Link>
             <p style={{ maxWidth: '350px', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
               An independent, community-driven platform for reporting local issues, gathering community support, and tracking resolution updates. Powered by citizens, for citizens.
             </p>
             <div style={{ display: 'flex', gap: '0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', fontWeight: 'bold' }}>
               <Shield size={16} />
-              <span>BBMP COMPLIANT & SECURE</span>
+              <span>VERIFIED & SECURE PLATFORM</span>
             </div>
           </div>
 
@@ -40,7 +40,7 @@ export function Footer() {
             <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                 <Mail size={16} />
-                <span>support@fixmystreet.in</span>
+                <span>support@thecivicvoice.in</span>
               </li>
               <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                 <Phone size={16} />
@@ -58,7 +58,7 @@ export function Footer() {
         {/* Bottom copyright info */}
         <div className="footer-bottom">
           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            © {new Date().getFullYear()} FixMyStreet India. All rights reserved. Built for community welfare.
+            © {new Date().getFullYear()} The Civic Voice. All rights reserved. Making Local Voices Count.
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
             Made with <Heart size={14} fill="var(--coral)" color="var(--coral)" /> by active citizens.

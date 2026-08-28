@@ -31,7 +31,7 @@ export function Header() {
         {/* Brand Logo */}
         <Link to="/" className="logo">
           <div className="logo-icon">#</div>
-          <span>FIXMYSTREET</span>
+          <span>THE CIVIC VOICE</span>
         </Link>
 
         {/* Desktop Nav Links */}
@@ -87,7 +87,7 @@ export function Header() {
           {/* Quick Submit button */}
           <Link to="/submit" className="brutal-btn small primary" style={{ textDecoration: 'none' }}>
             <PlusCircle size={16} />
-            <span>File Issue</span>
+            <span>Report Issue</span>
           </Link>
         </div>
 
@@ -121,9 +121,12 @@ export function Header() {
           <Link to="/problems" className="brutal-btn" onClick={() => setMobileMenuOpen(false)}>
             Browse Issues
           </Link>
-          <Link to="/submit" className="brutal-btn primary" onClick={() => setMobileMenuOpen(false)}>
-            Report a Problem
-          </Link>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '2rem' }}>
+            <Link to="/submit" className="brutal-btn primary" onClick={() => setMobileMenuOpen(false)}>
+              <PlusCircle size={18} />
+              <span>Report a Problem</span>
+            </Link>
+          </div>
           <Link to={currentUser?.role === 'admin' ? '/admin' : '/profile'} className="brutal-btn yellow" onClick={() => setMobileMenuOpen(false)}>
             {currentUser?.role === 'admin' ? 'Admin Control Center' : 'My Profile'}
           </Link>

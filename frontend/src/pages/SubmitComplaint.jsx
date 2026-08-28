@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, MapPin, AlertOctagon, UploadCloud, ChevronRight, HelpCircle } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { FileText, MapPin, AlertOctagon, UploadCloud, ChevronRight, HelpCircle, Navigation } from 'lucide-react';
 import { submitIssue, getCurrentUser } from '../services/client';
 
 export function SubmitComplaint() {
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
+
+
 
   // Form state
   const [title, setTitle] = useState('');
@@ -15,7 +18,27 @@ export function SubmitComplaint() {
   const [priority, setPriority] = useState('Medium');
   const [imageName, setImageName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState('');
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation(`${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`);
+        setIsLocating(false);
+        toast.success('Location acquired');
+      },
+      (err) => {
+        toast.error('Unable to retrieve your location');
+        setIsLocating(false);
+      }
+    );
+  };
 
   // Mock upload interaction
   const handleFileChange = (e) => {
@@ -24,37 +47,37 @@ export function SubmitComplaint() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     // Validations
-    if (!title.trim() || !description.trim() || !location.trim()) {
-      setError('Please fill in all required fields (Title, Description, and Location).');
+    if (!title.trim() || !location.trim()) {
+      setError('Please fill in all required fields (Title and Location).');
       return;
     }
 
     setIsSubmitting(true);
 
-    // Simulate database write lag for premium feel
-    setTimeout(() => {
-      try {
-        submitIssue(title, description, category, location, priority);
-        setIsSubmitting(false);
-        navigate('/problems'); // Redirect to feed page
-      } catch (err) {
-        setError('An error occurred during submission. Please try again.');
-        setIsSubmitting(false);
-      }
-    }, 800);
+    try {
+      const finalDescription = description.trim() || `No additional details provided for this ${category} issue.`;
+      await submitIssue(title, finalDescription, category, location, priority);
+      setIsSubmitting(false);
+      navigate('/problems');
+    } catch (err) {
+      setError('An error occurred during submission. Please try again.');
+      setIsSubmitting(false);
+    }
   };
+
+
 
   return (
     <div className="container" style={{ padding: '4rem 1.5rem', maxWidth: '800px' }}>
       {/* Page header banner */}
       <div className="section-header" style={{ marginBottom: '2.5rem' }}>
         <div>
-          <h2 className="section-title">REPORT A GRIEVANCE</h2>
+          <h2 className="section-title">REPORT YOUR ISSUE</h2>
           <p className="section-subtitle">File a public complaint. Provide accurate details and location coordinates so that community members can support it.</p>
         </div>
       </div>
@@ -155,8 +178,24 @@ export function SubmitComplaint() {
 
         {/* 4. Location Input */}
         <div style={{ marginBottom: '2rem' }}>
-          <label style={{ display: 'block', fontWeight: '800', fontSize: '1.1rem', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
-            Exact Location <span style={{ color: 'var(--coral)' }}>*</span>
+          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', fontWeight: '800', fontSize: '1.1rem', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+            <span>Exact Location <span style={{ color: 'var(--coral)' }}>*</span></span>
+            <button 
+              type="button" 
+              onClick={handleGetLocation} 
+              disabled={isLocating}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.4rem', 
+                background: 'none', border: 'none', color: 'var(--coral)', 
+                fontFamily: 'var(--font-sans)', fontWeight: '700', fontSize: '0.9rem', 
+                cursor: isLocating ? 'not-allowed' : 'pointer',
+                opacity: isLocating ? 0.6 : 1,
+                textDecoration: 'underline'
+              }}
+            >
+              <Navigation size={14} />
+              {isLocating ? 'Locating...' : 'Share My Location'}
+            </button>
           </label>
           <div style={{ position: 'relative' }}>
             <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--coral)' }}>
@@ -177,7 +216,7 @@ export function SubmitComplaint() {
         {/* 5. Description Textarea */}
         <div style={{ marginBottom: '2rem' }}>
           <label style={{ display: 'block', fontWeight: '800', fontSize: '1.1rem', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
-            Detailed Description <span style={{ color: 'var(--coral)' }}>*</span>
+            Detailed Description <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 'normal', marginLeft: '0.5rem' }}>(Optional)</span>
           </label>
           <textarea
             className="brutal-input"
@@ -185,7 +224,6 @@ export function SubmitComplaint() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             style={{ minHeight: '150px', resize: 'vertical' }}
-            required
           />
         </div>
 

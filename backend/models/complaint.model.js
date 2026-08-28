@@ -78,6 +78,25 @@ const complaintSchema = new mongoose.Schema(
             default: null
         },
 
+
+        comments: [
+            {
+                userId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "User"
+                },
+                text: {
+                    type: String,
+                    required: true,
+                    trim: true
+                },
+                date: {
+                    type: Date,
+                    default: Date.now
+                }
+            }
+        ],
+
         voteCount: {
             type: Number,
             default: 0,
