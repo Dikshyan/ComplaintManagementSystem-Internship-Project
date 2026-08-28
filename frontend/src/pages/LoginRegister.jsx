@@ -34,11 +34,15 @@ export function LoginRegister() {
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
-  // Redirect to profile if already authenticated
+  // Redirect if already authenticated
   useEffect(() => {
     const user = getCurrentUser();
     if (user) {
-      navigate('/profile');
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/profile');
+      }
     } else {
       setCheckingAuth(false);
     }
@@ -55,7 +59,7 @@ export function LoginRegister() {
     setShowConfirmPassword(false);
   }, [location.pathname]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -96,21 +100,23 @@ export function LoginRegister() {
 
     setLoading(true);
 
-    // Simulate network delay for a high-fidelity interaction feel
-    setTimeout(() => {
-      try {
-        if (isLoginView) {
-          login(username, password);
-        } else {
-          register(username, email, password, selectedAvatar.emoji);
-        }
-        setLoading(false);
-        navigate('/profile');
-      } catch (err) {
-        setError('Authentication failed. Please check your credentials and try again.');
-        setLoading(false);
+    try {
+      let loggedUser;
+      if (isLoginView) {
+        loggedUser = await login(username, password);
+      } else {
+        loggedUser = await register(username, email, password, selectedAvatar.emoji);
       }
-    }, 700);
+      setLoading(false);
+      if (loggedUser && loggedUser.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/profile');
+      }
+    } catch (err) {
+      setError('Authentication failed. Please check your credentials and try again.');
+      setLoading(false);
+    }
   };
 
   if (checkingAuth) {

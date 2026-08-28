@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, PlusCircle, Award, CheckCircle, Flame, Users, Zap, ShieldAlert } from 'lucide-react';
-import { getIssues, getStats } from '../services/client';
+import { getIssues, getStats, fetchComplaintsApi } from '../services/client';
 import { ProblemCard } from '../components/ProblemCard';
 
 export function Home() {
@@ -9,11 +9,13 @@ export function Home() {
   const [stats, setStats] = useState({ total: 0, resolved: 0, progress: 0, active: 0, totalVotes: 0 });
 
   useEffect(() => {
-    // Retrieve issues and sort by upvotes descending to get top 3 trending
-    const issues = getIssues();
-    const sorted = [...issues].sort((a, b) => b.upvotes - a.upvotes).slice(0, 3);
-    setTrendingIssues(sorted);
-    setStats(getStats());
+    const loadHomeData = async () => {
+      const issues = await fetchComplaintsApi();
+      const sorted = [...issues].sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0)).slice(0, 3);
+      setTrendingIssues(sorted);
+      setStats(getStats());
+    };
+    loadHomeData();
   }, []);
 
   const handleVoteToggle = () => {

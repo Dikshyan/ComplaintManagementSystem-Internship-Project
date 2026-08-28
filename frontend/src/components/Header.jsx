@@ -42,11 +42,8 @@ export function Header() {
           <Link to="/submit" className={`nav-link ${isActive('/submit')}`}>
             Report a Problem
           </Link>
-          <Link to="/profile" className={`nav-link ${isActive('/profile')}`}>
-            Profile
-          </Link>
-          <Link to="/admin" className={`nav-link ${isActive('/admin')}`}>
-            Admin
+          <Link to={currentUser?.role === 'admin' ? '/admin' : '/profile'} className={`nav-link ${isActive(currentUser?.role === 'admin' ? '/admin' : '/profile')}`}>
+            {currentUser?.role === 'admin' ? 'Admin Panel' : 'Profile'}
           </Link>
         </nav>
 
@@ -54,22 +51,23 @@ export function Header() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }} className="desktop-actions">
           {currentUser ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-color)' }}>
+              <Link to={currentUser?.role === 'admin' ? '/admin' : '/profile'} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-color)' }}>
                 <div style={{
                   width: '32px',
                   height: '32px',
                   borderRadius: '0',
-                  backgroundColor: 'var(--lavender)',
+                  backgroundColor: currentUser?.role === 'admin' ? 'var(--coral)' : 'var(--lavender)',
                   border: '2px solid var(--primary-color)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontWeight: '800',
-                  fontSize: '0.85rem'
+                  fontSize: '0.85rem',
+                  color: currentUser?.role === 'admin' ? 'var(--white)' : 'var(--primary-color)'
                 }}>
                   {currentUser.avatar || 'U'}
                 </div>
-                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{currentUser.username}</span>
+                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{currentUser.username} {currentUser?.role === 'admin' ? '(Admin)' : ''}</span>
               </Link>
               <button 
                 onClick={handleLogout} 
@@ -126,11 +124,8 @@ export function Header() {
           <Link to="/submit" className="brutal-btn primary" onClick={() => setMobileMenuOpen(false)}>
             Report a Problem
           </Link>
-          <Link to="/profile" className="brutal-btn yellow" onClick={() => setMobileMenuOpen(false)}>
-            My Profile
-          </Link>
-          <Link to="/admin" className="brutal-btn lime" onClick={() => setMobileMenuOpen(false)}>
-            Admin Dashboard
+          <Link to={currentUser?.role === 'admin' ? '/admin' : '/profile'} className="brutal-btn yellow" onClick={() => setMobileMenuOpen(false)}>
+            {currentUser?.role === 'admin' ? 'Admin Control Center' : 'My Profile'}
           </Link>
           
           <div style={{ height: '2px', backgroundColor: 'var(--primary-color)', margin: '1rem 0' }}></div>

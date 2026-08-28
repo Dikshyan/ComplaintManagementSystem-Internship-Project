@@ -13,6 +13,10 @@ const complaintSchema = new mongoose.Schema(
             enum: [
                 "Infrastructure",
                 "Sanitation",
+                "Water Supply",
+                "Electricity",
+                "Public Safety",
+                "Roads & Traffic",
                 "Environment",
                 "Public Services",
                 "Transportation",
@@ -60,7 +64,10 @@ const complaintSchema = new mongoose.Schema(
                 "Under Review",
                 "In Progress",
                 "Resolved",
-                "Rejected"
+                "Rejected",
+                "OPEN",
+                "IN_PROGRESS",
+                "RESOLVED"
             ],
             default: "Pending"
         },
