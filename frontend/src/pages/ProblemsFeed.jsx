@@ -68,7 +68,9 @@ export function ProblemsFeed() {
     if (sortBy === 'newest') {
       result.sort((a, b) => new Date(b.dateReported) - new Date(a.dateReported));
     } else if (sortBy === 'votes') {
-      result.sort((a, b) => b.upvotes - a.upvotes);
+      result.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+    } else if (sortBy === 'discussed') {
+      result.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
     }
 
     setFilteredIssues(result);
@@ -151,6 +153,7 @@ export function ProblemsFeed() {
             >
               <option value="newest">🕒 Newest First</option>
               <option value="votes">🔥 Most Upvoted</option>
+              <option value="discussed">💬 Most Discussed</option>
             </select>
           </div>
 
