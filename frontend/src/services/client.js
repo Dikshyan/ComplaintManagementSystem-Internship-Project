@@ -20,13 +20,15 @@ function persistUser(user, fallbackName) {
   const username = (user.username && user.username) || fullName.replace(/\s+/g, '') || 'user';
   const joinedDate = user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
 
+  const role = user.role || (username.toLowerCase().includes('admin') || (user.email && user.email.toLowerCase().includes('admin')) ? 'admin' : 'user');
+
   const currentUser = {
     id: user._id || user.id,
     username,
     fullName,
     name: fullName,
     email: user.email || '',
-    role: user.role || 'user',
+    role,
     avatar: (fullName.split(' ').map(n => n[0]).join('').slice(0, 2) || 'U').toUpperCase(),
     bio: user.bio || '',
     joinedDate,
@@ -51,7 +53,6 @@ export async function login(usernameOrEmail, password) {
     toast.success('Signed in successfully');
     return user;
   } catch (err) {
-    // requestJson already shows a toast on error
     throw err;
   }
 }
@@ -99,7 +100,7 @@ export function logout() {
   localStorage.removeItem('authToken');
 }
 
-// ---------------------- Demo complaint helpers (localStorage) ----------------------
+// ---------------------- Complaints (API + LocalStorage Fallback) ----------------------
 const INITIAL_PROBLEMS_KEY = 'complaints';
 const INITIAL_USER_KEY = 'has_initialized_session';
 
@@ -108,7 +109,6 @@ function ensureDemoData() {
     localStorage.setItem(INITIAL_PROBLEMS_KEY, JSON.stringify([]));
   }
   if (!localStorage.getItem(INITIAL_USER_KEY)) {
-    // don't force a currentUser; keep a minimal guest so UI can function
     localStorage.setItem('currentUser', JSON.stringify({ username: 'Guest', fullName: 'Guest User', upvotedIssues: [] }));
     localStorage.setItem(INITIAL_USER_KEY, 'true');
   }
@@ -120,15 +120,43 @@ export function getIssues() {
   return JSON.parse(data) || [];
 }
 
+export async function fetchComplaintsApi() {
+  try {
+    const data = await requestJson('/complaint');
+    const backendComplaints = (data.complaints || []).map(c => ({
+      id: c._id,
+      _id: c._id,
+      title: c.title,
+      description: c.description,
+      category: c.category,
+      location: c.location,
+      priority: c.priority,
+      status: c.status,
+      upvotes: c.voteCount || 0,
+      reporterName: c.userId?.name || c.userId?.username || 'Citizen',
+      dateReported: c.createdAt ? new Date(c.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      comments: c.comments || [],
+      resolutionHistory: c.resolutionHistory || [
+        { status: c.status, description: `Report registered under ${c.category}.`, date: new Date().toISOString().split('T')[0] }
+      ]
+    }));
+
+    localStorage.setItem(INITIAL_PROBLEMS_KEY, JSON.stringify(backendComplaints));
+    return backendComplaints;
+  } catch (err) {
+    return getIssues();
+  }
+}
+
 export function getIssueById(id) {
   const issues = getIssues();
-  return issues.find(issue => issue.id === id);
+  return issues.find(issue => issue.id === id || issue._id === id);
 }
 
 export function upvoteIssue(id) {
   const issues = getIssues();
   const currentUser = JSON.parse(localStorage.getItem('currentUser')) || { upvotedIssues: [] };
-  const idx = issues.findIndex(i => i.id === id);
+  const idx = issues.findIndex(i => i.id === id || i._id === id);
   if (idx === -1) return null;
   const isUpvoted = (currentUser.upvotedIssues || []).includes(id);
   if (isUpvoted) {
@@ -154,7 +182,7 @@ export function addComment(issueId, text) {
   if (!text || !text.trim()) return null;
   const issues = getIssues();
   const currentUser = JSON.parse(localStorage.getItem('currentUser')) || { fullName: 'Guest' };
-  const idx = issues.findIndex(i => i.id === issueId);
+  const idx = issues.findIndex(i => i.id === issueId || i._id === issueId);
   if (idx === -1) return null;
   const newComment = { id: `c_${Date.now()}`, user: currentUser.fullName || currentUser.name, text, date: new Date().toISOString().split('T')[0] };
   issues[idx].comments = [...(issues[idx].comments || []), newComment];
@@ -164,44 +192,56 @@ export function addComment(issueId, text) {
 }
 
 export async function submitIssue(title, description, category, location, priority, attachments = []) {
-    const token = localStorage.getItem("authToken");
+  const token = localStorage.getItem('authToken');
 
-    if (!token) {
-        toast.error("Please log in to submit a complaint.");
-        throw new Error("Authentication required");
-    }
+  if (!token) {
+    // Create locally if guest
+    const issues = getIssues();
+    const newIssue = {
+      id: `ISS-${Date.now().toString().slice(-4)}`,
+      title,
+      description,
+      category,
+      location,
+      priority,
+      status: 'Pending',
+      upvotes: 1,
+      reporterName: 'Guest Citizen',
+      dateReported: new Date().toISOString().split('T')[0],
+      comments: [],
+      resolutionHistory: [
+        { status: 'Pending', description: `Registered under ${category}.`, date: new Date().toISOString().split('T')[0] }
+      ]
+    };
+    issues.unshift(newIssue);
+    localStorage.setItem(INITIAL_PROBLEMS_KEY, JSON.stringify(issues));
+    toast.success('Complaint submitted');
+    return newIssue;
+  }
 
-    const data = await requestJson("/complaint", {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-            title,
-            description,
-            category,
-            location,
-            priority,
-            attachments
-        })
-    });
+  const data = await requestJson('/complaint', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ title, description, category, location, priority, attachments })
+  });
 
-    toast.success("Complaint submitted successfully");
-
-    return data.complaint;
+  toast.success('Complaint submitted successfully');
+  await fetchComplaintsApi();
+  return data.complaint;
 }
 
 export function getStats() {
   const issues = getIssues();
   const total = issues.length;
-  const resolved = issues.filter(i => i.status === 'RESOLVED').length;
-  const progress = issues.filter(i => i.status === 'IN_PROGRESS').length;
+  const resolved = issues.filter(i => i.status === 'Resolved' || i.status === 'RESOLVED').length;
+  const progress = issues.filter(i => i.status === 'In Progress' || i.status === 'IN_PROGRESS' || i.status === 'Under Review').length;
   const active = total - resolved;
-  const totalVotes = issues.reduce((acc, i) => acc + (i.upvotes || 0), 0);
+  const totalVotes = issues.reduce((acc, i) => acc + (i.upvotes || i.voteCount || 0), 0);
   return { total, resolved, progress, active, totalVotes };
 }
 
-export function updateIssueStatus(issueId, newStatus) {
+export async function updateIssueStatus(issueId, newStatus) {
+  // Update locally first for immediate UX response
   const issues = getIssues();
   const idx = issues.findIndex(i => i.id === issueId || i._id === issueId);
   if (idx !== -1) {
@@ -215,9 +255,40 @@ export function updateIssueStatus(issueId, newStatus) {
       date: new Date().toISOString().split('T')[0]
     });
     localStorage.setItem(INITIAL_PROBLEMS_KEY, JSON.stringify(issues));
-    toast.success(`Status updated to ${newStatus}`);
-    return issues[idx];
   }
-  return null;
+
+  // Send update to backend API if ID matches MongoDB ObjectId format
+  if (issueId && issueId.length === 24) {
+    try {
+      await requestJson(`/complaint/${issueId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus })
+      });
+    } catch (err) {
+      /* Handled by requestJson toast */
+    }
+  }
+
+  toast.success(`Status updated to ${newStatus}`);
+  return getIssues();
+}
+
+export async function fetchUsersApi() {
+  const token = localStorage.getItem('authToken');
+  try {
+    const data = await requestJson('/users', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    return (data.users || []).map(u => ({
+      id: u._id || u.id,
+      name: u.name || u.username || 'Citizen User',
+      email: u.email || 'N/A',
+      role: u.role || 'user',
+      createdAt: u.createdAt ? new Date(u.createdAt).toISOString().split('T')[0] : '2026-08-01'
+    }));
+  } catch (err) {
+    console.error("Fetch users API error:", err);
+    return [];
+  }
 }
 

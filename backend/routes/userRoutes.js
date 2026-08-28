@@ -4,10 +4,13 @@ const { protect } = require("../middleware/authMiddleware");
 const { requireAdmin } = require("../middleware/roleMiddleware");
 const {
   updateMyProfile,
-  updateUserRole
+  updateUserRole,
+  getAllUsers
 } = require("../controllers/userController");
 
 const router = express.Router();
+
+router.get("/", protect, requireAdmin, getAllUsers);
 
 router.patch("/me", protect, updateMyProfile);
 

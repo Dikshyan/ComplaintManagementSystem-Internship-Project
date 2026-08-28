@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Calendar, Mail, FileText, ArrowUp, Info, PlusCircle, LogOut } from 'lucide-react';
-import { getCurrentUser, getIssues, logout, fetchCurrentUser } from '../services/client';
+import { getCurrentUser, getIssues, logout, fetchCurrentUser, fetchComplaintsApi } from '../services/client';
 import { ProblemCard } from '../components/ProblemCard';
 
 export function Profile() {
@@ -11,7 +11,7 @@ export function Profile() {
   const [supportedIssues, setSupportedIssues] = useState([]);
   const [activeTab, setActiveTab] = useState('reported'); // 'reported' | 'supported'
 
-  const loadUserData = () => {
+  const loadUserData = async () => {
     const user = getCurrentUser();
     if (!user) {
       navigate('/login');
@@ -19,13 +19,13 @@ export function Profile() {
     }
     setCurrentUser(user);
 
-    const allIssues = getIssues();
+    const allIssues = await fetchComplaintsApi();
     // Filter issues reported by current user
-    const reported = allIssues.filter(issue => issue.reporterName === user.fullName);
+    const reported = allIssues.filter(issue => issue.reporterName === user.fullName || issue.userId === user.id);
     setMyIssues(reported);
 
     // Filter issues upvoted/supported by current user
-    const supported = allIssues.filter(issue => user.upvotedIssues.includes(issue.id));
+    const supported = allIssues.filter(issue => (user.upvotedIssues || []).includes(issue.id) || (user.upvotedIssues || []).includes(issue._id));
     setSupportedIssues(supported);
   };
 

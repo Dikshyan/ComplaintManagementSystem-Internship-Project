@@ -1,4 +1,15 @@
 const { userModel } = require("../models/user.model");
+
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await userModel.find().select("-password").sort({ createdAt: -1 });
+    return res.status(200).json({ users });
+  } catch (error) {
+    console.error("Fetch users error:", error);
+    return res.status(500).json({ message: "Failed to fetch users." });
+  }
+};
+
 const updateMyProfile = async (req, res) => {
   try {
     const allowedFields = ["name", "phoneNumber", "profileImage"];
@@ -37,6 +48,7 @@ const updateMyProfile = async (req, res) => {
     });
   }
 };
+
 const updateUserRole = async (req, res) => {
   try {
     const allowedRoles = ["user", "staff", "admin"];
@@ -69,4 +81,4 @@ const updateUserRole = async (req, res) => {
   }
 };
 
-module.exports = { updateMyProfile, updateUserRole };
+module.exports = { updateMyProfile, updateUserRole, getAllUsers };

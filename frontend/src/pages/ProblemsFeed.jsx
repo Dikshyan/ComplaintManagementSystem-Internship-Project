@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, HelpCircle, PlusCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getIssues } from '../services/client';
+import { getIssues, fetchComplaintsApi } from '../services/client';
 import { ProblemCard } from '../components/ProblemCard';
 
 const CATEGORIES = [
@@ -25,8 +25,9 @@ export function ProblemsFeed() {
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'votes'
 
-  const loadIssues = () => {
-    setIssues(getIssues());
+  const loadIssues = async () => {
+    const data = await fetchComplaintsApi();
+    setIssues(data);
   };
 
   useEffect(() => {
