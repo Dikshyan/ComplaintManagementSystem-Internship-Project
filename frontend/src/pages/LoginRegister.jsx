@@ -40,6 +40,8 @@ export function LoginRegister() {
     if (user) {
       if (user.role === 'admin') {
         navigate('/admin');
+      } else if (user.role === 'staff') {
+        navigate('/staff');
       } else {
         navigate('/profile');
       }
@@ -110,6 +112,8 @@ export function LoginRegister() {
       setLoading(false);
       if (loggedUser && loggedUser.role === 'admin') {
         navigate('/admin');
+      } else if (loggedUser && loggedUser.role === 'staff') {
+        navigate('/staff');
       } else {
         navigate('/profile');
       }

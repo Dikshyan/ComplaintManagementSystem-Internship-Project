@@ -66,6 +66,8 @@ const complaintSchema = new mongoose.Schema(
                 "Resolved",
                 "Rejected",
                 "OPEN",
+                "ASSIGNED",
+                "Assigned",
                 "IN_PROGRESS",
                 "RESOLVED"
             ],
@@ -78,6 +80,10 @@ const complaintSchema = new mongoose.Schema(
             default: null
         },
 
+        assignedDepartment: {
+            type: String,
+            default: ""
+        },
 
         comments: [
             {

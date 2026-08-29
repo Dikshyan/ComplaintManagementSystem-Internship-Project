@@ -74,7 +74,7 @@ const updateUserRole = async (req, res) => {
     const updatedUser = await userModel.findByIdAndUpdate(
       id,
       { role },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updatedUser) {

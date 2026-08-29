@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Calendar, User, MessageSquare, ArrowUp, Send, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
-import { toast } from 'react-toastify';
-import { getIssueById, upvoteIssue, hasUpvoted, addComment, fetchComplaintsApi, getCurrentUser } from '../services/client';
+import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft, MapPin, Calendar, User, MessageSquare, Send, CheckCircle2, AlertCircle, Clock, ShieldCheck, Building } from 'lucide-react';
+import { getIssueById, addComment, fetchComplaintsApi } from '../services/client';
 
-export function ProblemDetails() {
+export function MyGrievanceDetails() {
   const { id } = useParams();
-  const location = useLocation();
-  const navigate = useNavigate();
   const [problem, setProblem] = useState(null);
-  const [votes, setVotes] = useState(0);
-  const [isUpvoted, setIsUpvoted] = useState(false);
   
   // Comments input state
   const [commentText, setCommentText] = useState('');
@@ -22,43 +17,13 @@ export function ProblemDetails() {
     const data = getIssueById(id);
     if (data) {
       setProblem(data);
-      setVotes(data.upvotes || data.voteCount || 0);
       setComments(data.comments || []);
-      setIsUpvoted(hasUpvoted(data.id || data._id));
     }
   };
 
   useEffect(() => {
     loadProblemDetails();
   }, [id]);
-
-  // Handle scrolling to comments section if URL hash is present
-  useEffect(() => {
-    if (location.hash === '#comments') {
-      const el = document.getElementById('comments-section');
-      if (el) {
-        setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 100);
-      }
-    }
-  }, [location, problem]);
-
-  const handleVote = async () => {
-    const currentUser = getCurrentUser();
-    if (!currentUser) {
-      toast.error('Please sign in to upvote complaints', { toastId: 'vote-login-required' });
-      navigate('/login');
-      return;
-    }
-    if (currentUser.role === 'admin' || currentUser.role === 'staff') {
-      toast.info('Voting is restricted to public citizens', { toastId: 'vote-role-restricted' });
-      return;
-    }
-    const result = await upvoteIssue(id);
-    if (result) {
-      setVotes(result.issue.upvotes);
-      setIsUpvoted(result.isUpvoted);
-    }
-  };
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
@@ -78,10 +43,10 @@ export function ProblemDetails() {
           <AlertCircle size={48} style={{ margin: '0 auto 1rem' }} />
           <h3 style={{ fontSize: '2rem', marginBottom: '1rem', color: 'var(--white)' }}>GRIEVANCE NOT FOUND</h3>
           <p style={{ color: 'var(--white)', marginBottom: '2rem', opacity: '0.9' }}>
-            The problem report with ID "{id}" could not be retrieved from the database. It might have been deleted or archived.
+            The problem report with ID "{id}" could not be retrieved from your account history.
           </p>
-          <Link to="/problems" className="brutal-btn yellow" style={{ display: 'inline-flex' }}>
-            Back to Browse
+          <Link to="/profile" className="brutal-btn yellow" style={{ display: 'inline-flex' }}>
+            Back to Profile
           </Link>
         </div>
       </div>
@@ -108,16 +73,17 @@ export function ProblemDetails() {
   const getStatusBadge = (stat) => {
     if (stat === 'RESOLVED') return <span className="badge status-resolved">RESOLVED</span>;
     if (stat === 'IN_PROGRESS') return <span className="badge status-progress">IN PROGRESS</span>;
+    if (stat === 'ASSIGNED') return <span className="badge" style={{ backgroundColor: 'var(--coral)', color: 'var(--white)', fontWeight: 'bold' }}>ASSIGNED</span>;
     return <span className="badge status-open">OPEN</span>;
   };
 
   return (
     <div className="container" style={{ padding: '3rem 1.5rem' }}>
-      {/* Back button */}
+      {/* Back to Profile Link */}
       <div style={{ marginBottom: '2rem' }}>
-        <Link to="/problems" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-sans)', fontSize: '1rem' }}>
-          <ArrowLeft size={16} />
-          <span>Back to All Problems</span>
+        <Link to="/profile" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-sans)', fontSize: '1rem', fontWeight: 'bold' }}>
+          <ArrowLeft size={18} />
+          <span>Back to My Profile</span>
         </Link>
       </div>
 
@@ -127,14 +93,14 @@ export function ProblemDetails() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
           {/* Title Header */}
           <div>
-            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
               <span className="badge" style={{ backgroundColor: getCategoryColor(problem.category) }}>
                 {problem.category}
               </span>
               {getPriorityBadge(problem.priority)}
               {getStatusBadge(problem.status)}
             </div>
-            <h1 style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)', textTransform: 'none', lineHeight: '1.15' }}>
+            <h1 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', textTransform: 'none', lineHeight: '1.15' }}>
               {problem.title}
             </h1>
           </div>
@@ -153,7 +119,7 @@ export function ProblemDetails() {
           {/* Description Block */}
           <div className="brutal-card" style={{ padding: '2.5rem' }}>
             <h3 style={{ fontSize: '1.6rem', marginBottom: '1.25rem', borderBottom: '2px solid var(--primary-color)', paddingBottom: '0.5rem' }}>
-              ISSUE DESCRIPTION
+              GRIEVANCE DESCRIPTION
             </h3>
             <p style={{ 
               fontSize: '1.1rem', 
@@ -165,37 +131,35 @@ export function ProblemDetails() {
             </p>
           </div>
 
-          {/* Live Action Upvote Callout */}
-          <div className="brutal-card yellow" style={{ 
-            padding: '2rem', 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '1.5rem'
-          }}>
-            <div>
-              <h3 style={{ fontSize: '1.4rem', marginBottom: '0.5rem', textTransform: 'none' }}>
-                {isUpvoted ? "You support this grievance!" : "Do you face this issue too?"}
-              </h3>
-              <p style={{ color: 'var(--primary-color)', fontWeight: '500', margin: '0' }}>
-                Upvote to notify local supervisors of widespread community concern.
-              </p>
+          {/* Assigned Staff Officer Card (if assigned) */}
+          {problem.assignedTo ? (
+            <div className="brutal-card yellow" style={{ padding: '2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                <ShieldCheck size={24} color="var(--primary-color)" />
+                <h3 style={{ fontSize: '1.4rem', margin: 0, textTransform: 'uppercase' }}>
+                  ASSIGNED MUNICIPAL OFFICER
+                </h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '1rem' }}>
+                <div><strong>Officer Name:</strong> {problem.assignedTo.name}</div>
+                <div><strong>Official Email:</strong> {problem.assignedTo.email}</div>
+                <div><strong>Department:</strong> 🏢 {problem.assignedDepartment || problem.assignedTo.department || 'Municipal Public Services'}</div>
+              </div>
             </div>
-            <button 
-              onClick={handleVote} 
-              className={`brutal-btn ${isUpvoted ? 'primary' : 'white'}`}
-              style={{ fontSize: '1.1rem', padding: '1rem 2rem' }}
-            >
-              <ArrowUp size={20} style={{ transform: isUpvoted ? 'scale(1.2)' : 'none', transition: 'transform 0.2s' }} />
-              <span>{votes} SUPPORTERS</span>
-            </button>
-          </div>
+          ) : (
+            <div className="brutal-card lavender" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <Clock size={24} />
+              <div>
+                <strong style={{ fontSize: '1rem', display: 'block' }}>Awaiting Staff Assignment</strong>
+                <span style={{ fontSize: '0.85rem' }}>Your grievance is being reviewed by city administrators for officer dispatch.</span>
+              </div>
+            </div>
+          )}
 
-          {/* Comments Section */}
+          {/* Comments / Progress Updates Section */}
           <div id="comments-section" className="brutal-card" style={{ padding: '2.5rem' }}>
             <h3 style={{ fontSize: '1.6rem', marginBottom: '1.5rem', borderBottom: '2px solid var(--primary-color)', paddingBottom: '0.5rem' }}>
-              CITIZEN DISCUSSION ({comments.length})
+              GRIEVANCE COMMENTS & UPDATES ({comments.length})
             </h3>
 
             {/* Comment Form */}
@@ -203,14 +167,14 @@ export function ProblemDetails() {
               <input 
                 type="text" 
                 className="brutal-input" 
-                placeholder="Write a comment, report progress, or suggest solutions..."
+                placeholder="Add additional details or post progress updates..."
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 style={{ flexGrow: 1 }}
               />
               <button type="submit" className="brutal-btn primary" style={{ padding: '0.85rem 1.5rem' }}>
                 <Send size={18} />
-                <span className="comment-btn-text">Comment</span>
+                <span className="comment-btn-text">Send Update</span>
               </button>
             </form>
 
@@ -235,23 +199,23 @@ export function ProblemDetails() {
               </div>
             ) : (
               <p style={{ fontSize: '1rem', fontStyle: 'italic', textAlign: 'center', padding: '1rem 0' }}>
-                No comments posted yet. Be the first to share your thoughts!
+                No updates posted yet.
               </p>
             )}
           </div>
         </div>
 
-        {/* Right Column: Status Sidebar */}
+        {/* Right Column: Status & Timeline Sidebar */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
           {/* Metadata Card */}
           <div className="brutal-card" style={{ padding: '2rem' }}>
             <h4 style={{ fontFamily: 'var(--font-sans)', fontSize: '1.2rem', marginBottom: '1.5rem', textTransform: 'uppercase' }}>
-              Report Details
+              MY REPORT SUMMARY
             </h4>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.2rem' }}>ID Reference</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Reference ID</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold' }}>{problem.id}</div>
               </div>
 
@@ -264,18 +228,17 @@ export function ProblemDetails() {
               </div>
 
               <div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Reported By</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Date Registered</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: '600' }}>
-                  <User size={16} />
-                  <span>{problem.reporterName}</span>
+                  <Calendar size={16} />
+                  <span>{problem.dateReported}</span>
                 </div>
               </div>
 
               <div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Date Reported</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: '600' }}>
-                  <Calendar size={16} />
-                  <span>{problem.dateReported}</span>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Community Supporters</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: 'var(--coral)' }}>
+                  👍 {problem.upvotes || problem.voteCount || 0} Citizens Upvoted
                 </div>
               </div>
             </div>
@@ -284,7 +247,7 @@ export function ProblemDetails() {
           {/* Resolution History Timeline */}
           <div className="brutal-card lavender" style={{ padding: '2rem' }}>
             <h4 style={{ fontFamily: 'var(--font-sans)', fontSize: '1.2rem', marginBottom: '1.5rem', textTransform: 'uppercase', color: 'var(--primary-color)' }}>
-              Resolution Timeline
+              RESOLUTION TIMELINE
             </h4>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', position: 'relative' }}>

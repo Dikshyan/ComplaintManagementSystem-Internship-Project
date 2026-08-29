@@ -39,11 +39,16 @@ export function Header() {
           <Link to="/problems" className={`nav-link ${isActive('/problems')}`}>
             Browse Issues
           </Link>
-          <Link to="/submit" className={`nav-link ${isActive('/submit')}`}>
-            Report a Problem
-          </Link>
-          <Link to={currentUser?.role === 'admin' ? '/admin' : '/profile'} className={`nav-link ${isActive(currentUser?.role === 'admin' ? '/admin' : '/profile')}`}>
-            {currentUser?.role === 'admin' ? 'Admin Panel' : 'Profile'}
+          {(!currentUser || currentUser.role === 'user') && (
+            <Link to="/submit" className={`nav-link ${isActive('/submit')}`}>
+              Report a Problem
+            </Link>
+          )}
+          <Link
+            to={currentUser?.role === 'admin' ? '/admin' : currentUser?.role === 'staff' ? '/staff' : '/profile'}
+            className={`nav-link ${isActive(currentUser?.role === 'admin' ? '/admin' : currentUser?.role === 'staff' ? '/staff' : '/profile')}`}
+          >
+            {currentUser?.role === 'admin' ? 'Admin Panel' : currentUser?.role === 'staff' ? 'Staff Portal' : 'Profile'}
           </Link>
         </nav>
 
@@ -51,12 +56,15 @@ export function Header() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }} className="desktop-actions">
           {currentUser ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <Link to={currentUser?.role === 'admin' ? '/admin' : '/profile'} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-color)' }}>
+              <Link
+                to={currentUser?.role === 'admin' ? '/admin' : currentUser?.role === 'staff' ? '/staff' : '/profile'}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-color)' }}
+              >
                 <div style={{
                   width: '32px',
                   height: '32px',
                   borderRadius: '0',
-                  backgroundColor: currentUser?.role === 'admin' ? 'var(--coral)' : 'var(--lavender)',
+                  backgroundColor: currentUser?.role === 'admin' ? 'var(--coral)' : currentUser?.role === 'staff' ? 'var(--lime)' : 'var(--lavender)',
                   border: '2px solid var(--primary-color)',
                   display: 'flex',
                   alignItems: 'center',
@@ -67,7 +75,9 @@ export function Header() {
                 }}>
                   {currentUser.avatar || 'U'}
                 </div>
-                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{currentUser.username} {currentUser?.role === 'admin' ? '(Admin)' : ''}</span>
+                <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
+                  {currentUser.username} {currentUser?.role === 'admin' ? '(Admin)' : currentUser?.role === 'staff' ? '(Staff)' : ''}
+                </span>
               </Link>
               <button 
                 onClick={handleLogout} 
@@ -84,11 +94,13 @@ export function Header() {
             </Link>
           )}
 
-          {/* Quick Submit button */}
-          <Link to="/submit" className="brutal-btn small primary" style={{ textDecoration: 'none' }}>
-            <PlusCircle size={16} />
-            <span>Report Issue</span>
-          </Link>
+          {/* Quick Submit button for Citizens */}
+          {(!currentUser || currentUser.role === 'user') && (
+            <Link to="/submit" className="brutal-btn small primary" style={{ textDecoration: 'none' }}>
+              <PlusCircle size={16} />
+              <span>Report Issue</span>
+            </Link>
+          )}
         </div>
 
         {/* Mobile menu toggle button */}

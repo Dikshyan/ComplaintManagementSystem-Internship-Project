@@ -5,10 +5,13 @@ import { Footer } from './components/Footer';
 import { Home } from './pages/Home';
 import { ProblemsFeed } from './pages/ProblemsFeed';
 import { ProblemDetails } from './pages/ProblemDetails';
+import { MyGrievanceDetails } from './pages/MyGrievanceDetails';
 import { SubmitComplaint } from './pages/SubmitComplaint';
 import { LoginRegister } from './pages/LoginRegister';
 import { Profile } from './pages/Profile';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { StaffDashboard } from './pages/StaffDashboard';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import './App.css';
 import { ToastContainer } from 'react-toastify';
 
@@ -28,11 +31,36 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/problems" element={<ProblemsFeed />} />
             <Route path="/problems/:id" element={<ProblemDetails />} />
-            <Route path="/submit" element={<SubmitComplaint />} />
+            
+            {/* Protected Routes (Authentication Layer Required) */}
+            <Route path="/my-grievance/:id" element={
+              <ProtectedRoute>
+                <MyGrievanceDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="/submit" element={
+              <ProtectedRoute roleRequired="user">
+                <SubmitComplaint />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <ProtectedRoute roleRequired="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/staff" element={
+              <ProtectedRoute roleRequired="staff">
+                <StaffDashboard />
+              </ProtectedRoute>
+            } />
+
             <Route path="/login" element={<LoginRegister />} />
             <Route path="/register" element={<LoginRegister />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/admin" element={<AdminDashboard />} />
           </Routes>
         </main>
         

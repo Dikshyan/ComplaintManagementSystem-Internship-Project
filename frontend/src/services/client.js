@@ -1,6 +1,6 @@
 import { toast } from 'react-toastify';
 
-const API_BASE_URL = ('http://localhost:8080/api').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 
 async function requestJson(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
@@ -9,7 +9,7 @@ async function requestJson(path, options = {}) {
   const data = contentType.includes('application/json') ? await response.json() : {};
   if (!response.ok) {
     const msg = data.message || 'Request failed';
-    try { toast.error(msg); } catch (e) { /* noop */ }
+    try { toast.error(msg, { toastId: msg }); } catch (e) { /* noop */ }
     throw new Error(msg);
   }
   return data;
@@ -102,15 +102,19 @@ export function logout() {
 
 // ---------------------- Complaints (API + LocalStorage Fallback) ----------------------
 const INITIAL_PROBLEMS_KEY = 'complaints';
-const INITIAL_USER_KEY = 'has_initialized_session';
-
 function ensureDemoData() {
   if (!localStorage.getItem(INITIAL_PROBLEMS_KEY)) {
     localStorage.setItem(INITIAL_PROBLEMS_KEY, JSON.stringify([]));
   }
-  if (!localStorage.getItem(INITIAL_USER_KEY)) {
-    localStorage.setItem('currentUser', JSON.stringify({ username: 'Guest', fullName: 'Guest User', upvotedIssues: [] }));
-    localStorage.setItem(INITIAL_USER_KEY, 'true');
+  // Remove legacy auto-guest session if present
+  try {
+    const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (user && (user.username === 'Guest' || user.fullName === 'Guest User' || user.name === 'Guest User')) {
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('authToken');
+    }
+  } catch (e) {
+    /* noop */
   }
 }
 ensureDemoData();
@@ -136,6 +140,14 @@ export async function fetchComplaintsApi() {
       reporterName: c.userId?.name || c.userId?.username || 'Citizen',
       dateReported: c.createdAt ? new Date(c.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       comments: c.comments || [],
+      assignedTo: c.assignedTo ? {
+        id: c.assignedTo._id || c.assignedTo.id,
+        _id: c.assignedTo._id || c.assignedTo.id,
+        name: c.assignedTo.name || c.assignedTo.username || 'Staff Officer',
+        email: c.assignedTo.email || '',
+        department: c.assignedTo.department || ''
+      } : null,
+      assignedDepartment: c.assignedDepartment || c.assignedTo?.department || '',
       resolutionHistory: c.resolutionHistory || [
         { status: c.status, description: `Report registered under ${c.category}.`, date: new Date().toISOString().split('T')[0] }
       ]
@@ -146,6 +158,84 @@ export async function fetchComplaintsApi() {
   } catch (err) {
     return getIssues();
   }
+}
+
+export async function fetchMyComplaintsApi() {
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    const all = getIssues();
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser) return [];
+    return all.filter(i => i.userId === currentUser.id || i.reporterName === currentUser.fullName || i.reporterName === currentUser.name);
+  }
+
+  try {
+    const data = await requestJson('/complaint/my', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return (data.complaints || []).map(c => ({
+      id: c._id,
+      _id: c._id,
+      title: c.title,
+      description: c.description,
+      category: c.category,
+      location: c.location,
+      priority: c.priority,
+      status: c.status,
+      upvotes: c.voteCount || 0,
+      reporterName: c.userId?.name || c.userId?.username || 'Citizen',
+      userId: c.userId?._id || c.userId?.id || c.userId,
+      dateReported: c.createdAt ? new Date(c.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      comments: c.comments || [],
+      assignedTo: c.assignedTo ? {
+        id: c.assignedTo._id || c.assignedTo.id,
+        _id: c.assignedTo._id || c.assignedTo.id,
+        name: c.assignedTo.name || c.assignedTo.username || 'Staff Officer',
+        email: c.assignedTo.email || '',
+        department: c.assignedTo.department || ''
+      } : null,
+      assignedDepartment: c.assignedDepartment || c.assignedTo?.department || '',
+      resolutionHistory: c.resolutionHistory || [
+        { status: c.status, description: `Report registered under ${c.category}.`, date: new Date().toISOString().split('T')[0] }
+      ]
+    }));
+  } catch (err) {
+    const all = await fetchComplaintsApi();
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser) return [];
+    return all.filter(i => i.userId === currentUser.id || i.reporterName === currentUser.fullName || i.reporterName === currentUser.name);
+  }
+}
+
+export async function assignComplaintApi(issueId, staffId, department) {
+  const token = localStorage.getItem('authToken');
+  const body = {};
+  if (staffId) body.assignedTo = staffId;
+  if (department) body.assignedDepartment = department;
+
+  if (issueId && issueId.length === 24) {
+    try {
+      await requestJson(`/complaint/${issueId}/assign`, {
+        method: 'PATCH',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: JSON.stringify(body)
+      });
+    } catch (err) {
+      /* handled */
+    }
+  }
+
+  // Update local cache
+  const issues = getIssues();
+  const idx = issues.findIndex(i => i.id === issueId || i._id === issueId);
+  if (idx !== -1) {
+    issues[idx].status = 'ASSIGNED';
+    if (department) issues[idx].assignedDepartment = department;
+    localStorage.setItem(INITIAL_PROBLEMS_KEY, JSON.stringify(issues));
+  }
+
+  toast.success('Grievance assigned to staff member successfully');
+  return getIssues();
 }
 
 export function getIssueById(id) {
@@ -359,6 +449,7 @@ export async function fetchUsersApi() {
       name: u.name || u.username || 'Citizen User',
       email: u.email || 'N/A',
       role: u.role || 'user',
+      department: u.department || '',
       createdAt: u.createdAt ? new Date(u.createdAt).toISOString().split('T')[0] : '2026-08-01'
     }));
   } catch (err) {
@@ -366,4 +457,39 @@ export async function fetchUsersApi() {
     return [];
   }
 }
+
+export async function createStaffAccountApi({ name, email, password, department }) {
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    toast.error('Authentication required to create staff user');
+    throw new Error('Authentication required');
+  }
+
+  const data = await requestJson('/users/staff', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ name, email, password, department })
+  });
+
+  toast.success(`Staff account for ${name} created successfully!`);
+  return data.user;
+}
+
+export async function deleteUserApi(userId) {
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    toast.error('Authentication required');
+    throw new Error('Authentication required');
+  }
+
+  const data = await requestJson(`/users/${userId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  toast.success('User account removed successfully');
+  return data;
+}
+
+
 
