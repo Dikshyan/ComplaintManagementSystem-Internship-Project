@@ -48,8 +48,11 @@ export function SubmitComplaint() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+    if (!getCurrentUser()) {
+      toast.error('Please sign in to register a complaint');
+      navigate('/login');
+      return;
+    }
 
     // Validations
     if (!title.trim() || !location.trim()) {
@@ -116,7 +119,7 @@ export function SubmitComplaint() {
           }}>
             {currentUser?.avatar || 'U'}
           </div>
-          <span>Filing grievance public record as: <strong>{currentUser?.fullName || 'Resident Guest'} (@{currentUser?.username || 'user'})</strong></span>
+          <span>Filing grievance public record as: <strong>{currentUser?.fullName || currentUser?.name || 'Citizen'} (@{currentUser?.username || 'citizen'})</strong></span>
         </div>
 
         {/* 1. Title Input */}

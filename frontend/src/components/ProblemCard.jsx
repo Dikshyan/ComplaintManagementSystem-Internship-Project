@@ -1,14 +1,26 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MapPin, ArrowUp, MessageSquare, Calendar, User } from 'lucide-react';
-import { upvoteIssue, hasUpvoted } from '../services/client';
+import { toast } from 'react-toastify';
+import { upvoteIssue, hasUpvoted, getCurrentUser } from '../services/client';
 
 export function ProblemCard({ problem, onVote }) {
+  const navigate = useNavigate();
   const [votes, setVotes] = useState(problem.upvotes);
   const [isUpvoted, setIsUpvoted] = useState(hasUpvoted(problem.id));
 
   const handleVote = async (e) => {
     e.preventDefault(); // Stop navigation if clicked inside card Link
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      toast.error('Please sign in to upvote complaints', { toastId: 'vote-login-required' });
+      navigate('/login');
+      return;
+    }
+    if (currentUser.role === 'admin' || currentUser.role === 'staff') {
+      toast.info('Voting is restricted to public citizens', { toastId: 'vote-role-restricted' });
+      return;
+    }
     const result = await upvoteIssue(problem.id);
     if (result) {
       setVotes(result.issue.upvotes);
@@ -134,9 +146,8 @@ export function ProblemCard({ problem, onVote }) {
 
         {/* Upvote & Comment counts */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Link to={`/problems/${problem.id}#comments`} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.9rem', color: 'var(--primary-color)' }}>
-            <MessageSquare size={16} />
-            <span>{problem.comments?.length || 0}</span>
+          <Link to={`/problems/${problem.id}`} className="brutal-btn small white" style={{ textDecoration: 'none', padding: '0.35rem 0.65rem', fontSize: '0.8rem' }}>
+            <span>View Details →</span>
           </Link>
           
           <button 

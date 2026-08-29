@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Calendar, Mail, FileText, ArrowUp, Info, PlusCircle, LogOut } from 'lucide-react';
-import { getCurrentUser, getIssues, logout, fetchCurrentUser, fetchComplaintsApi } from '../services/client';
+import { getCurrentUser, getIssues, logout, fetchCurrentUser, fetchComplaintsApi, fetchMyComplaintsApi } from '../services/client';
 import { ProblemCard } from '../components/ProblemCard';
 
 export function Profile() {
@@ -19,12 +19,12 @@ export function Profile() {
     }
     setCurrentUser(user);
 
-    const allIssues = await fetchComplaintsApi();
-    // Filter issues reported by current user
-    const reported = allIssues.filter(issue => issue.reporterName === user.fullName || issue.userId === user.id);
-    setMyIssues(reported);
+    // Fetch user-specific registered complaints
+    const myReported = await fetchMyComplaintsApi();
+    setMyIssues(myReported);
 
     // Filter issues upvoted/supported by current user
+    const allIssues = await fetchComplaintsApi();
     const supported = allIssues.filter(issue => (user.upvotedIssues || []).includes(issue.id) || (user.upvotedIssues || []).includes(issue._id));
     setSupportedIssues(supported);
   };
@@ -158,7 +158,48 @@ export function Profile() {
             gap: '2.5rem' 
           }}>
             {myIssues.map((issue) => (
-              <ProblemCard key={issue.id} problem={issue} onVote={loadUserData} />
+              <div key={issue.id} className="brutal-card" style={{ padding: "1.75rem", display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "1.25rem" }}>
+                <div>
+                  <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+                    <span className="badge" style={{ backgroundColor: "var(--yellow)" }}>{issue.category}</span>
+                    <span className="badge" style={{ backgroundColor: issue.status === "RESOLVED" || issue.status === "Resolved" ? "var(--lime)" : issue.status === "IN_PROGRESS" || issue.status === "In Progress" ? "var(--lavender)" : issue.status === "ASSIGNED" ? "var(--coral)" : "var(--white)", color: issue.status === "RESOLVED" || issue.status === "Resolved" ? "var(--primary-color)" : issue.status === "ASSIGNED" ? "var(--white)" : "var(--primary-color)", fontWeight: "bold" }}>
+                      STATUS: {issue.status}
+                    </span>
+                    <span className="badge priority-medium">PRIORITY: {issue.priority}</span>
+                  </div>
+
+                  <h3 style={{ fontSize: "1.35rem", marginBottom: "0.5rem", textTransform: "none" }}>
+                    <Link to={`/my-grievance/${issue.id}`} style={{ color: "inherit", textDecoration: "none" }}>
+                      {issue.title}
+                    </Link>
+                  </h3>
+
+                  <p style={{ fontSize: "0.95rem", color: "var(--text-secondary)", marginBottom: "1rem", lineHeight: "1.5" }}>
+                    {issue.description}
+                  </p>
+
+                  {issue.assignedTo && (
+                    <div style={{ backgroundColor: "var(--bg-color)", border: "2px solid var(--primary-color)", padding: "0.75rem", marginBottom: "1rem" }}>
+                      <div style={{ fontWeight: "800", fontSize: "0.8rem", textTransform: "uppercase" }}>
+                        👤 Assigned Staff Officer:
+                      </div>
+                      <div style={{ fontSize: "0.9rem", fontWeight: "700", marginTop: "0.2rem" }}>
+                        {issue.assignedTo.name} ({issue.assignedDepartment || issue.assignedTo.department || "Municipal Officer"})
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ borderTop: "2px solid var(--primary-color)", paddingTop: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+                  <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: "600" }}>
+                    <span>📍 {issue.location}</span> • <span>📅 {issue.dateReported}</span>
+                  </div>
+
+                  <Link to={`/my-grievance/${issue.id}`} className="brutal-btn small yellow" style={{ textDecoration: "none" }}>
+                    <span>View Grievance & Timeline →</span>
+                  </Link>
+                </div>
+              </div>
             ))}
           </div>
         ) : (

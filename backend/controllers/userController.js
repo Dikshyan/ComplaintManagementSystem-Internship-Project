@@ -1,3 +1,4 @@
+const bcrypt = require("bcryptjs");
 const { userModel } = require("../models/user.model");
 
 const getAllUsers = async (req, res) => {
@@ -7,6 +8,45 @@ const getAllUsers = async (req, res) => {
   } catch (error) {
     console.error("Fetch users error:", error);
     return res.status(500).json({ message: "Failed to fetch users." });
+  }
+};
+
+const createStaffUser = async (req, res) => {
+  try {
+    const { name, email, password, department } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "Name, email, and password are required." });
+    }
+
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters long." });
+    }
+
+    const trimmedName = String(name).trim();
+    const trimmedEmail = String(email).trim().toLowerCase();
+
+    const existingUser = await userModel.findOne({ email: trimmedEmail });
+    if (existingUser) {
+      return res.status(409).json({ message: "An account with this email already exists." });
+    }
+
+    const hashedPassword = await bcrypt.hash(String(password), 10);
+    const staffUser = await userModel.create({
+      name: trimmedName,
+      email: trimmedEmail,
+      password: hashedPassword,
+      role: "staff",
+      department: department || "General Municipal Services"
+    });
+
+    return res.status(201).json({
+      message: "Staff account created successfully.",
+      user: staffUser.toPublicJSON()
+    });
+  } catch (error) {
+    console.error("Create staff user error:", error);
+    return res.status(400).json({ message: error.message || "Failed to create staff account." });
   }
 };
 
@@ -30,7 +70,7 @@ const updateMyProfile = async (req, res) => {
     const updatedUser = await userModel.findByIdAndUpdate(
       req.user._id,
       updates,
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
 
     if (!updatedUser) {
@@ -62,7 +102,7 @@ const updateUserRole = async (req, res) => {
     const updatedUser = await userModel.findByIdAndUpdate(
       id,
       { role },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updatedUser) {
@@ -81,4 +121,20 @@ const updateUserRole = async (req, res) => {
   }
 };
 
-module.exports = { updateMyProfile, updateUserRole, getAllUsers };
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedUser = await userModel.findByIdAndDelete(id);
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    return res.status(200).json({ message: "User removed successfully." });
+  } catch (error) {
+    console.error("Delete user error:", error);
+    return res.status(500).json({ message: "Failed to delete user." });
+  }
+};
+
+module.exports = { getAllUsers, createStaffUser, updateMyProfile, updateUserRole, deleteUser };

@@ -5,15 +5,17 @@ const { requireAdmin } = require("../middleware/roleMiddleware");
 const {
   updateMyProfile,
   updateUserRole,
-  getAllUsers
+  getAllUsers,
+  createStaffUser,
+  deleteUser
 } = require("../controllers/userController");
 
 const router = express.Router();
 
-router.get("/", protect, requireAdmin, getAllUsers);
-
+router.get("/", getAllUsers);
+router.post("/staff", protect, requireAdmin, createStaffUser);
 router.patch("/me", protect, updateMyProfile);
-
 router.patch("/:id/role", protect, requireAdmin, updateUserRole);
+router.delete("/:id", protect, requireAdmin, deleteUser);
 
 module.exports = router;

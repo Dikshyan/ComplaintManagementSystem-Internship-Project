@@ -25,9 +25,12 @@ import {
   fetchComplaintsApi,
   updateIssueStatus,
   fetchUsersApi,
+  createStaffAccountApi,
+  deleteUserApi,
+  assignComplaintApi,
   logout
 } from "../services/client";
-import { ShieldAlert } from "lucide-react";
+import { ShieldAlert, Plus, X as XIcon, Eye, EyeOff, Trash2 } from "lucide-react";
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -48,10 +51,26 @@ export function AdminDashboard() {
   const [usersList, setUsersList] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Staff creation modal state
+  const [showStaffModal, setShowStaffModal] = useState(false);
+  const [staffName, setStaffName] = useState("");
+  const [staffEmail, setStaffEmail] = useState("");
+  const [staffPassword, setStaffPassword] = useState("");
+  const [staffDepartment, setStaffDepartment] = useState("Infrastructure & Public Works");
+  const [showStaffPassword, setShowStaffPassword] = useState(false);
+  const [creatingStaff, setCreatingStaff] = useState(false);
+  const [staffModalError, setStaffModalError] = useState("");
+  // Staff workload inspection modal state
+  const [selectedStaffDetail, setSelectedStaffDetail] = useState(null);
+
   // Filters for Browse Issues tab inside Admin Panel
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedStatus, setSelectedStatus] = useState("All");
+
+  // Filters for Users tab inside Admin Panel
+  const [userRoleFilter, setUserRoleFilter] = useState("All");
+  const [userSearchTerm, setUserSearchTerm] = useState("");
 
   // Settings toggles state
   const [settings, setSettings] = useState({
@@ -173,6 +192,69 @@ export function AdminDashboard() {
 
     return matchesSearch && matchesCategory && matchesStatus;
   });
+
+  // Filtered users for Users tab
+  const filteredUsersList = usersList.filter((usr) => {
+    const matchesRole = userRoleFilter === "All" || usr.role === userRoleFilter;
+    const matchesSearch =
+      userSearchTerm === "" ||
+      usr.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      usr.email.toLowerCase().includes(userSearchTerm.toLowerCase());
+    return matchesRole && matchesSearch;
+  });
+
+  const staffUsers = usersList.filter((u) => u.role === "staff");
+
+  const handleAssignStaff = async (issueId, staffId) => {
+    if (!staffId) return;
+    const selectedStaff = usersList.find((u) => u.id === staffId || u._id === staffId);
+    const dept = selectedStaff?.department || "";
+    await assignComplaintApi(issueId, staffId, dept);
+    const updatedIssues = await fetchComplaintsApi();
+    setIssues(updatedIssues);
+  };
+
+  const handleCreateStaff = async (e) => {
+    e.preventDefault();
+    setStaffModalError("");
+    if (!staffName.trim() || !staffEmail.trim() || !staffPassword.trim()) {
+      setStaffModalError("Please fill in all required fields.");
+      return;
+    }
+    if (staffPassword.length < 6) {
+      setStaffModalError("Password must be at least 6 characters long.");
+      return;
+    }
+    setCreatingStaff(true);
+    try {
+      await createStaffAccountApi({ name: staffName.trim(), email: staffEmail.trim(), password: staffPassword, department: staffDepartment });
+      setStaffName("");
+      setStaffEmail("");
+      setStaffPassword("");
+      setStaffDepartment("Infrastructure & Public Works");
+      setStaffModalError("");
+      setShowStaffModal(false);
+      const updated = await fetchUsersApi();
+      setUsersList(updated);
+    } catch (err) {
+      setStaffModalError(err.message || "Failed to create staff account.");
+    } finally {
+      setCreatingStaff(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId, userName) => {
+    if (!window.confirm(`Are you sure you want to remove user "${userName}"? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      await deleteUserApi(userId);
+      const updated = await fetchUsersApi();
+      setUsersList(updated);
+    } catch (err) {
+      /* handled by client */
+    }
+  };
 
   return (
     <div
@@ -439,20 +521,17 @@ export function AdminDashboard() {
                       <div>{issue.reporterName}</div>
                       <div style={{ color: "var(--text-secondary)" }}>{issue.dateReported}</div>
                       <select
-                        value={issue.status}
-                        onChange={(e) => handleStatusChange(issue.id, e.target.value)}
-                        style={{
-                          border: "2px solid var(--primary-color)",
-                          padding: "0.4rem",
-                          fontWeight: "800",
-                          backgroundColor: "var(--white)",
-                          cursor: "pointer",
-                          minHeight: "40px",
-                        }}
+                        className="brutal-select"
+                        value={issue.assignedTo?.id || issue.assignedTo?._id || ""}
+                        onChange={(e) => handleAssignStaff(issue.id, e.target.value)}
+                        style={{ padding: "0.35rem 0.6rem", fontSize: "0.8rem", width: "160px" }}
                       >
-                        <option value="OPEN">OPEN</option>
-                        <option value="IN_PROGRESS">IN PROGRESS</option>
-                        <option value="RESOLVED">RESOLVED</option>
+                        <option value="">-- Assign Staff --</option>
+                        {staffUsers.map((st) => (
+                          <option key={st.id || st._id} value={st.id || st._id}>
+                            👤 {st.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -507,9 +586,14 @@ export function AdminDashboard() {
               {filteredIssues.map((issue) => (
                 <div key={issue.id} className="brutal-card" style={{ padding: "1.5rem", display: "grid", gridTemplateColumns: "1fr auto", gap: "1.5rem", alignItems: "center" }}>
                   <div>
-                    <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem", alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
                       <span className="badge" style={{ backgroundColor: "var(--yellow)" }}>{issue.category}</span>
                       <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.8rem", fontWeight: "bold" }}>{issue.id}</span>
+                      {issue.assignedTo && (
+                        <span className="badge" style={{ backgroundColor: "var(--lavender)", color: "var(--primary-color)", fontWeight: "bold" }}>
+                          👤 ASSIGNED: {issue.assignedTo.name} {issue.assignedDepartment ? `(${issue.assignedDepartment})` : ''}
+                        </span>
+                      )}
                     </div>
 
                     <h3 style={{ fontSize: "1.3rem", marginBottom: "0.5rem", textTransform: "none" }}>
@@ -531,19 +615,28 @@ export function AdminDashboard() {
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.75rem" }}>
-                    <div style={{ fontWeight: "800", fontSize: "0.85rem", textTransform: "uppercase" }}>
-                      Update Status:
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.25rem" }}>
+                      <div style={{ fontWeight: "800", fontSize: "0.75rem", textTransform: "uppercase" }}>
+                        Assign to Staff:
+                      </div>
+                      <select
+                        className="brutal-select"
+                        value={issue.assignedTo?.id || issue.assignedTo?._id || ""}
+                        onChange={(e) => handleAssignStaff(issue.id, e.target.value)}
+                        style={{ padding: "0.35rem 0.6rem", fontSize: "0.8rem", width: "170px" }}
+                      >
+                        <option value="">-- Assign Staff --</option>
+                        {staffUsers.map((st) => (
+                          <option key={st.id || st._id} value={st.id || st._id}>
+                            👤 {st.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                    <select
-                      className="brutal-select"
-                      value={issue.status}
-                      onChange={(e) => handleStatusChange(issue.id, e.target.value)}
-                      style={{ padding: "0.5rem 1rem", width: "160px" }}
-                    >
-                      <option value="OPEN">🔴 OPEN</option>
-                      <option value="IN_PROGRESS">🟡 IN PROGRESS</option>
-                      <option value="RESOLVED">🟢 RESOLVED</option>
-                    </select>
+
+                    <div style={{ fontSize: "0.8rem", fontWeight: "bold", fontFamily: "var(--font-mono)", backgroundColor: "var(--bg-color)", padding: "0.35rem 0.6rem", border: "2px solid var(--primary-color)" }}>
+                      STATUS: {issue.status}
+                    </div>
 
                     <Link to={`/problems/${issue.id}`} className="brutal-btn small yellow" style={{ textDecoration: "none" }}>
                       View Details
@@ -558,117 +651,483 @@ export function AdminDashboard() {
         {/* TAB 3: USERS MANAGEMENT */}
         {activeTab === "users" && (
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-              <h2>REGISTERED CITIZENS & STAFF ({usersList.length})</h2>
-              <div className="badge status-resolved" style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }}>
-                <Shield size={14} style={{ display: "inline", marginRight: "0.3rem" }} />
-                ROLE AUTHENTICATION ACTIVE
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", flexWrap: "wrap", gap: "1rem" }}>
+              <div>
+                <h2 style={{ margin: 0 }}>REGISTERED CITIZENS & STAFF ({usersList.length})</h2>
+                <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "0.2rem" }}>
+                  Manage account roles and provision municipal staff logins.
+                </div>
               </div>
+
+              <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                <button
+                  className="brutal-btn primary"
+                  onClick={() => setShowStaffModal(true)}
+                  style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+                >
+                  <Plus size={18} />
+                  <span>Create Staff Account</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Create Staff Modal */}
+            {showStaffModal && (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  width: "100vw",
+                  height: "100vh",
+                  backgroundColor: "rgba(0,0,0,0.6)",
+                  zIndex: 999,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "1.5rem"
+                }}
+              >
+                <div
+                  className="brutal-card yellow"
+                  style={{
+                    maxWidth: "500px",
+                    width: "100%",
+                    padding: "2.5rem",
+                    position: "relative",
+                    backgroundColor: "var(--white)"
+                  }}
+                >
+                  <button
+                    onClick={() => setShowStaffModal(false)}
+                    style={{
+                      position: "absolute",
+                      right: "1.5rem",
+                      top: "1.5rem",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <XIcon size={24} />
+                  </button>
+
+                  <h2 style={{ fontSize: "1.8rem", marginBottom: "0.5rem", textTransform: "uppercase" }}>
+                    PROVISION STAFF LOGIN
+                  </h2>
+                  {staffModalError && (
+                    <div className="brutal-card coral" style={{ color: "var(--white)", padding: "0.75rem", marginBottom: "1rem", fontSize: "0.85rem", fontWeight: "bold" }}>
+                      ⚠️ {staffModalError}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleCreateStaff} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                    <div>
+                      <label style={{ display: "block", fontWeight: "800", fontSize: "0.85rem", marginBottom: "0.4rem", textTransform: "uppercase" }}>
+                        Staff Full Name
+                      </label>
+                      <input
+                        type="text"
+                        className="brutal-input"
+                        placeholder="e.g. Officer Rajesh Verma"
+                        value={staffName}
+                        onChange={(e) => setStaffName(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontWeight: "800", fontSize: "0.85rem", marginBottom: "0.4rem", textTransform: "uppercase" }}>
+                        Official Email Address
+                      </label>
+                      <input
+                        type="email"
+                        className="brutal-input"
+                        placeholder="e.g. rajesh.v@bbmp.gov.in"
+                        value={staffEmail}
+                        onChange={(e) => setStaffEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontWeight: "800", fontSize: "0.85rem", marginBottom: "0.4rem", textTransform: "uppercase" }}>
+                        Assigned Municipal Department
+                      </label>
+                      <select
+                        className="brutal-select"
+                        value={staffDepartment}
+                        onChange={(e) => setStaffDepartment(e.target.value)}
+                        style={{ width: "100%", padding: "0.75rem" }}
+                      >
+                        <option value="Infrastructure & Public Works">Infrastructure & Public Works</option>
+                        <option value="Sanitation & Waste Management">Sanitation & Waste Management</option>
+                        <option value="Water Supply & Drainage">Water Supply & Drainage</option>
+                        <option value="Electrical & Street Lighting">Electrical & Street Lighting</option>
+                        <option value="Public Safety & Health">Public Safety & Health</option>
+                        <option value="Roads, Traffic & Transit">Roads, Traffic & Transit</option>
+                        <option value="General Municipal Services">General Municipal Services</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontWeight: "800", fontSize: "0.85rem", marginBottom: "0.4rem", textTransform: "uppercase" }}>
+                        Account Password
+                      </label>
+                      <div style={{ position: "relative" }}>
+                        <input
+                          type={showStaffPassword ? "text" : "password"}
+                          className="brutal-input"
+                          placeholder="••••••••"
+                          value={staffPassword}
+                          onChange={(e) => setStaffPassword(e.target.value)}
+                          required
+                          minLength={6}
+                          style={{ paddingRight: "2.5rem" }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowStaffPassword(!showStaffPassword)}
+                          style={{
+                            position: "absolute",
+                            right: "12px",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            color: "var(--text-secondary)",
+                            display: "flex",
+                            alignItems: "center"
+                          }}
+                          title={showStaffPassword ? "Hide password" : "Show password"}
+                        >
+                          {showStaffPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+                      <button
+                        type="submit"
+                        className="brutal-btn primary"
+                        disabled={creatingStaff}
+                        style={{ flex: 1 }}
+                      >
+                        {creatingStaff ? "CREATING..." : "CREATE STAFF LOGIN"}
+                      </button>
+                      <button
+                        type="button"
+                        className="brutal-btn white"
+                        onClick={() => setShowStaffModal(false)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* User Search & Role Category Filter Bar */}
+            <div className="brutal-card" style={{ padding: "1.25rem", marginBottom: "2rem", display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1rem" }}>
+              <div style={{ position: "relative" }}>
+                <Search size={18} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary)" }} />
+                <input
+                  type="text"
+                  className="brutal-input"
+                  placeholder="Filter users by name or email address..."
+                  value={userSearchTerm}
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
+                  style={{ paddingLeft: "2.5rem" }}
+                />
+              </div>
+
+              <select className="brutal-select" value={userRoleFilter} onChange={(e) => setUserRoleFilter(e.target.value)}>
+                <option value="All">All User Roles ({usersList.length})</option>
+                <option value="user">Citizens (Users) ({usersList.filter(u => u.role === 'user').length})</option>
+                <option value="staff">Municipal Staff ({usersList.filter(u => u.role === 'staff').length})</option>
+                <option value="admin">Administrators ({usersList.filter(u => u.role === 'admin').length})</option>
+              </select>
+            </div>
+
+            {/* Users Count Banner */}
+            <div style={{ marginBottom: "1.5rem", fontWeight: "bold", fontFamily: "var(--font-mono)" }}>
+              SHOWING <span style={{ color: "var(--coral)" }}>{filteredUsersList.length}</span> OF {usersList.length} REGISTERED ACCOUNTS
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem" }}>
-              {usersList.map((usr) => (
-                <div key={usr.id} className="brutal-card" style={{ padding: "1.5rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-                    <div style={{
-                      width: "48px",
-                      height: "48px",
-                      backgroundColor: usr.role === "admin" ? "var(--coral)" : usr.role === "staff" ? "var(--yellow)" : "var(--lavender)",
-                      border: "2px solid var(--primary-color)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: "800",
-                      fontSize: "1.2rem",
-                      color: usr.role === "admin" ? "var(--white)" : "var(--primary-color)"
-                    }}>
-                      {(usr.name.charAt(0) || "U").toUpperCase()}
+              {filteredUsersList.map((usr) => {
+                const staffTasks = issues.filter(
+                  (i) =>
+                    i.assignedTo?.id === usr.id ||
+                    i.assignedTo?._id === usr.id ||
+                    (i.assignedTo?.email && i.assignedTo.email.toLowerCase() === usr.email.toLowerCase()) ||
+                    (usr.department && i.assignedDepartment === usr.department)
+                );
+
+                return (
+                  <div key={usr.id} className="brutal-card" style={{ padding: "1.5rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+                      <div style={{
+                        width: "48px",
+                        height: "48px",
+                        backgroundColor: usr.role === "admin" ? "var(--coral)" : usr.role === "staff" ? "var(--yellow)" : "var(--lavender)",
+                        border: "2px solid var(--primary-color)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: "800",
+                        fontSize: "1.2rem",
+                        color: usr.role === "admin" ? "var(--white)" : "var(--primary-color)"
+                      }}>
+                        {(usr.name.charAt(0) || "U").toUpperCase()}
+                      </div>
+
+                      <span className="badge" style={{
+                        backgroundColor: usr.role === "admin" ? "var(--coral)" : usr.role === "staff" ? "var(--yellow)" : "var(--lime)",
+                        color: usr.role === "admin" ? "var(--white)" : "var(--primary-color)",
+                        fontWeight: "bold"
+                      }}>
+                        {usr.role.toUpperCase()}
+                      </span>
                     </div>
 
-                    <span className="badge" style={{
-                      backgroundColor: usr.role === "admin" ? "var(--coral)" : usr.role === "staff" ? "var(--yellow)" : "var(--lime)",
-                      color: usr.role === "admin" ? "var(--white)" : "var(--primary-color)",
-                      fontWeight: "bold"
-                    }}>
-                      {usr.role.toUpperCase()}
+                    <h3 style={{ fontSize: "1.2rem", marginBottom: "0.25rem" }}>{usr.name}</h3>
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>{usr.email}</p>
+
+                    {usr.department && (
+                      <div style={{ marginBottom: "0.75rem" }}>
+                        <span className="badge" style={{ backgroundColor: "var(--yellow)", fontSize: "0.75rem", padding: "0.2rem 0.5rem" }}>
+                          🏢 {usr.department}
+                        </span>
+                      </div>
+                    )}
+
+                    {usr.role === "staff" && (
+                      <div style={{ marginBottom: "0.75rem", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                        <span style={{ fontWeight: "700" }}>
+                          Assigned Tasks: <span style={{ color: "var(--coral)", fontWeight: "800" }}>{staffTasks.length}</span>
+                        </span>
+                        <span>•</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedStaffDetail({ staff: usr, tasks: staffTasks })}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "var(--coral)",
+                            fontWeight: "800",
+                            textDecoration: "underline",
+                            cursor: "pointer",
+                            padding: 0,
+                            fontSize: "0.85rem"
+                          }}
+                        >
+                          View All
+                        </button>
+                      </div>
+                    )}
+                    
+                    <div style={{ borderTop: "2px solid var(--primary-color)", paddingTop: "0.75rem", fontSize: "0.8rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <span>Registered: {usr.createdAt}</span>
+                      </div>
+                      
+                      <button
+                        className="brutal-btn small coral"
+                        onClick={() => handleDeleteUser(usr.id, usr.name)}
+                        style={{ padding: "0.35rem 0.65rem", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "0.35rem" }}
+                        title="Remove user account"
+                      >
+                        <Trash2 size={13} />
+                        <span>Remove</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Staff Workload Detail Modal */}
+            {selectedStaffDetail && (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  width: "100vw",
+                  height: "100vh",
+                  backgroundColor: "rgba(0,0,0,0.6)",
+                  zIndex: 1000,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "1.5rem"
+                }}
+              >
+                <div
+                  className="brutal-card white"
+                  style={{
+                    maxWidth: "700px",
+                    width: "100%",
+                    maxHeight: "85vh",
+                    display: "flex",
+                    flexDirection: "column",
+                    padding: "2rem",
+                    position: "relative",
+                    backgroundColor: "var(--white)"
+                  }}
+                >
+                  <button
+                    onClick={() => setSelectedStaffDetail(null)}
+                    style={{
+                      position: "absolute",
+                      right: "1.5rem",
+                      top: "1.5rem",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <XIcon size={24} />
+                  </button>
+
+                  <div style={{ marginBottom: "1.25rem", borderBottom: "3px solid var(--primary-color)", paddingBottom: "1rem" }}>
+                    <span className="badge" style={{ backgroundColor: "var(--yellow)", marginBottom: "0.4rem" }}>
+                      STAFF WORKLOAD REPORT
                     </span>
+                    <h2 style={{ fontSize: "1.8rem", margin: 0, textTransform: "uppercase" }}>
+                      {selectedStaffDetail.staff.name}
+                    </h2>
+                    <div style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginTop: "0.2rem" }}>
+                      {selectedStaffDetail.staff.email} • 🏢 {selectedStaffDetail.staff.department || "General Municipal Services"}
+                    </div>
                   </div>
 
-                  <h3 style={{ fontSize: "1.2rem", marginBottom: "0.25rem" }}>{usr.name}</h3>
-                  <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1rem" }}>{usr.email}</p>
-                  
-                  <div style={{ borderTop: "2px solid var(--primary-color)", paddingTop: "0.75rem", fontSize: "0.8rem", display: "flex", justifyContent: "space-between" }}>
-                    <span>Registered: {usr.createdAt}</span>
-                    <span style={{ color: "var(--lime)", fontWeight: "bold" }}>● Active</span>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }}>
+                    <div className="brutal-card yellow" style={{ padding: "0.75rem", textAlign: "center" }}>
+                      <div style={{ fontSize: "1.5rem", fontWeight: "800" }}>{selectedStaffDetail.tasks.length}</div>
+                      <div style={{ fontSize: "0.75rem", fontWeight: "bold" }}>TOTAL ASSIGNED</div>
+                    </div>
+                    <div className="brutal-card lavender" style={{ padding: "0.75rem", textAlign: "center" }}>
+                      <div style={{ fontSize: "1.5rem", fontWeight: "800" }}>
+                        {selectedStaffDetail.tasks.filter(t => t.status === "IN_PROGRESS" || t.status === "In Progress" || t.status === "ASSIGNED").length}
+                      </div>
+                      <div style={{ fontSize: "0.75rem", fontWeight: "bold" }}>ACTIVE / IN PROGRESS</div>
+                    </div>
+                    <div className="brutal-card lime" style={{ padding: "0.75rem", textAlign: "center" }}>
+                      <div style={{ fontSize: "1.5rem", fontWeight: "800" }}>
+                        {selectedStaffDetail.tasks.filter(t => t.status === "RESOLVED" || t.status === "Resolved").length}
+                      </div>
+                      <div style={{ fontSize: "0.75rem", fontWeight: "bold" }}>RESOLVED</div>
+                    </div>
+                  </div>
+
+                  <h3 style={{ fontSize: "1.1rem", marginBottom: "0.75rem", textTransform: "uppercase" }}>
+                    ASSIGNED COMPLAINTS LIST ({selectedStaffDetail.tasks.length})
+                  </h3>
+
+                  <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "1rem", paddingRight: "0.5rem" }}>
+                    {selectedStaffDetail.tasks.length === 0 ? (
+                      <div className="brutal-card yellow" style={{ padding: "2rem", textAlign: "center" }}>
+                        No grievances currently assigned to this staff officer.
+                      </div>
+                    ) : (
+                      selectedStaffDetail.tasks.map((task) => (
+                        <div key={task.id} className="brutal-card" style={{ padding: "1rem" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.4rem" }}>
+                            <span className="badge" style={{ backgroundColor: "var(--yellow)", fontSize: "0.75rem" }}>{task.category}</span>
+                            <span className="badge" style={{ backgroundColor: task.status === "RESOLVED" || task.status === "Resolved" ? "var(--lime)" : task.status === "IN_PROGRESS" || task.status === "In Progress" ? "var(--lavender)" : "var(--coral)", color: task.status === "RESOLVED" || task.status === "Resolved" ? "var(--primary-color)" : "var(--white)", fontSize: "0.75rem" }}>
+                              {task.status}
+                            </span>
+                          </div>
+                          <h4 style={{ margin: "0.4rem 0", fontSize: "1.05rem" }}>{task.title}</h4>
+                          <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", display: "flex", gap: "0.75rem" }}>
+                            <span>📍 {task.location}</span>
+                            <span>📅 {task.dateReported}</span>
+                          </div>
+                          <div style={{ marginTop: "0.75rem", textAlign: "right" }}>
+                            <Link to={`/problems/${task.id}`} className="brutal-btn small yellow" onClick={() => setSelectedStaffDetail(null)} style={{ textDecoration: "none" }}>
+                              View Problem Details →
+                            </Link>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* TAB 4: SETTINGS */}
+        {/* TAB 4: SETTINGS - COMING SOON */}
         {activeTab === "settings" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "2rem", maxWidth: "800px" }}>
-            <div className="brutal-card" style={{ padding: "2.5rem" }}>
-              <h3 style={{ fontSize: "1.5rem", marginBottom: "1.5rem", borderBottom: "2px solid var(--primary-color)", paddingBottom: "0.5rem" }}>
-                MUNICIPAL ROUTING SETTINGS
-              </h3>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                {/* Setting item 1 */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontWeight: "800", fontSize: "1.05rem" }}>Automated BBMP Ward Dispatch</div>
-                    <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Auto-route high priority complaints directly to BBMP zonal officers.</div>
-                  </div>
-                  <button
-                    className={`brutal-btn small ${settings.autoNotifyBbmp ? "primary" : "white"}`}
-                    onClick={() => setSettings({ ...settings, autoNotifyBbmp: !settings.autoNotifyBbmp })}
-                  >
-                    {settings.autoNotifyBbmp ? "ENABLED" : "DISABLED"}
-                  </button>
-                </div>
-
-                {/* Setting item 2 */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontWeight: "800", fontSize: "1.05rem" }}>Auto-Escalate Hotspots (50+ Upvotes)</div>
-                    <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Automatically bump issue priority to High when upvotes cross 50 votes.</div>
-                  </div>
-                  <button
-                    className={`brutal-btn small ${settings.autoEscalate ? "yellow" : "white"}`}
-                    onClick={() => setSettings({ ...settings, autoEscalate: !settings.autoEscalate })}
-                  >
-                    {settings.autoEscalate ? "ENABLED" : "DISABLED"}
-                  </button>
-                </div>
-
-                {/* Setting item 3 */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontWeight: "800", fontSize: "1.05rem" }}>Public Discussion Board</div>
-                    <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Allow registered citizens to post comments on public grievances.</div>
-                  </div>
-                  <button
-                    className={`brutal-btn small ${settings.publicCommentsAllowed ? "lime" : "white"}`}
-                    onClick={() => setSettings({ ...settings, publicCommentsAllowed: !settings.publicCommentsAllowed })}
-                  >
-                    {settings.publicCommentsAllowed ? "ENABLED" : "DISABLED"}
-                  </button>
-                </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "55vh", textAlign: "center", padding: "1rem 0" }}>
+            <div
+              className="brutal-card yellow hover-rotate"
+              style={{
+                maxWidth: "620px",
+                width: "100%",
+                padding: "3.5rem 2.5rem",
+                backgroundColor: "var(--white)"
+              }}
+            >
+              <div
+                style={{
+                  width: "72px",
+                  height: "72px",
+                  backgroundColor: "var(--yellow)",
+                  color: "var(--primary-color)",
+                  border: "3px solid var(--primary-color)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 1.5rem",
+                  fontWeight: "800",
+                  boxShadow: "4px 4px 0 var(--primary-color)"
+                }}
+              >
+                <Settings size={40} />
               </div>
-            </div>
 
-            {/* System Status info */}
-            <div className="brutal-card yellow" style={{ padding: "2rem", display: "flex", alignItems: "center", gap: "1rem" }}>
-              <Bell size={32} />
-              <div>
-                <h4 style={{ margin: 0, textTransform: "uppercase" }}>System API Health</h4>
-                <p style={{ margin: "0.25rem 0 0 0", color: "var(--primary-color)", fontWeight: "600" }}>
-                  Connected to Mongo DB Cluster (`http://localhost:8080/api/complaint`). Real-time synchronization active.
-                </p>
-              </div>
+              <span
+                className="badge"
+                style={{
+                  backgroundColor: "var(--coral)",
+                  color: "var(--white)",
+                  fontSize: "0.85rem",
+                  padding: "0.4rem 1rem",
+                  marginBottom: "1.25rem",
+                  display: "inline-block"
+                }}
+              >
+                🚀 UNDER DEVELOPMENT
+              </span>
+
+              <h2
+                style={{
+                  fontSize: "2.4rem",
+                  marginBottom: "1rem",
+                  textTransform: "uppercase",
+                  fontFamily: "var(--font-display)",
+                  letterSpacing: "-0.5px"
+                }}
+              >
+                SETTINGS COMING SOON
+              </h2>
+
+              <p
+                style={{
+                  fontSize: "1.05rem",
+                  color: "var(--text-secondary)",
+                  margin: 0,
+                  lineHeight: "1.6"
+                }}
+              >
+                We are building advanced municipal routing controls, automated BBMP ward dispatch algorithms, and customizable department notifications. This section will be unlocked in an upcoming platform release!
+              </p>
             </div>
           </div>
         )}
