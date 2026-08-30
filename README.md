@@ -1,258 +1,289 @@
-# The Civic Voice — Making Local Voices Count
+# The Civic Voice — Civic Complaint and Grievance Management System
 
-A public-oriented complaint management platform that allows citizens to report community issues and enables others to support those complaints through voting and discussion. Authorities or staff can review, assign, track, and resolve complaints while maintaining a transparent history of status updates.
+The Civic Voice is a full-stack civic complaint management platform that bridges the communication gap between citizens and municipal authorities. Citizens can report infrastructure and civic issues, attach photographic evidence, upvote priority concerns, and track resolution timelines. Administrative and departmental staff can manage, assign, investigate, and resolve grievances with complete transparency.
 
-## Overview
+---
 
-The platform is designed to improve communication between citizens and authorities by making public complaints visible and community-driven.
+## Architecture and Technology Stack
 
-Users can raise complaints related to issues such as roads, garbage management, water supply, street lights, traffic, public health, transportation, and other public services.
+### Frontend
+- Framework: React 18 with Vite
+- Routing: React Router v6
+- Styling: Custom Neobrutalism Design System (Vanilla CSS tokens and components)
+- Icons: Lucide React
+- Animations: Framer Motion
+- Notifications: React Toastify
+- HTTP Client: Fetch API with modular domain-specific service layers
 
-Other users can view complaints, vote to show their support, and participate in discussions. Staff can manage complaints from submission to resolution.
+### Backend
+- Runtime: Node.js (CommonJS)
+- Framework: Express 5
+- Database: MongoDB with Mongoose ODM
+- Authentication: JSON Web Tokens (JWT) and bcryptjs
+- File Uploads: Multer with Cloudinary CDN integration
+- Middleware: Custom Authentication, Role-based Access Control (RBAC), and Error Handling
 
-## Key Features
+---
 
-### Public Users
+## System Roles and Permissions
 
-* User registration and authentication
-* Raise public complaints
-* Select complaint category
-* Add title and detailed description
-* Set complaint priority
-* Add location information
-* Upload optional attachments
-* View publicly submitted complaints
-* Vote on complaints
-* Comment and discuss complaints
-* Track complaint status
-* View complaint resolution history
-* Search and filter complaints
+The application implements three distinct role tiers:
 
-### Complaint Management
+### 1. Citizen (User)
+- Register and authenticate into the platform.
+- Report grievances with title, category, description, priority, location, and photo attachments.
+- Browse public grievances across the community.
+- Upvote complaints to highlight severity and public demand.
+- Participate in community comment discussions.
+- Track personal complaints and view officer assignment and status timelines.
+- Reset account passwords using the self-service forgot password mechanism.
 
-Each complaint contains:
+### 2. Municipal Staff
+- Access the dedicated Staff Dashboard.
+- View complaints assigned to the staff member or department.
+- Accept assigned complaints and acknowledge review.
+- Update complaint status through workflow states: Under Review, In Progress, Resolved, or Rejected.
+- Add resolution notes and timeline entries.
 
-* Complaint title
-* Category
-* Description
-* Priority
-* Location
-* Attachments
-* Current status
-* Vote count
-* Comment count
-* Complaint creator
-* Assigned staff member
-* Creation date
-* Last updated date
+### 3. Administrator
+- Access the full Civic Control Center (Admin Dashboard).
+- Real-time platform analytics: total complaints, pending, resolved, active, and cumulative citizen votes.
+- Assign complaints to municipal staff members and specific departments.
+- Delete rejected complaints after review.
+- User management: inspect registered citizens and staff accounts.
+- Promote or demote user roles dynamically between Citizen, Staff, and Administrator.
+- Provision dedicated staff credentials and department designations.
+- Remove user accounts when necessary.
 
-### Staff and Authority Dashboard
+---
 
-Staff members can:
+## Grievance Lifecycle and Status Workflow
 
-* View submitted complaints
-* Filter complaints by category, priority, and status
-* Assign complaints to staff members
-* Update complaint status
-* Add resolution notes
-* View complaint history
-* Manage reported issues
-* Mark complaints as resolved or closed
-
-## Complaint Status
-
-A complaint can move through the following stages:
+Complaints follow a structured status transition:
 
 ```text
-Pending
-   |
-   v
-Assigned
-   |
-   v
-In Progress
-   |
-   v
-Resolved
-   |
-   v
-Closed
+       [ Submitted ] (Pending)
+             |
+             v
+       [ Assigned ] (Assigned to Department / Staff)
+             |
+      +------+------+
+      |             |
+      v             v
+[ Under Review ] [ Rejected ] ---> (Admin Deletion Permitted)
+      |
+      v
+[ In Progress ]
+      |
+      v
+ [ Resolved ]
 ```
 
-Every status change can be recorded in the complaint's resolution history.
+- Pending: Complaint filed by citizen, awaiting department dispatch.
+- Assigned: Administrative control assigns complaint to a staff officer.
+- Under Review: Staff acknowledges task and verifies site details.
+- In Progress: Municipal operations or field work actively ongoing.
+- Resolved: Problem fixed with resolution record updated.
+- Rejected: Complaint deemed invalid, duplicate, or out of jurisdiction. Only complaints in this state can be permanently purged by administrators.
 
-## Community Voting
+---
 
-Users can vote on complaints that they support.
+## Security Implementation
 
-Each user can vote only once on a particular complaint. The voting system helps identify issues that affect a larger portion of the community.
+- Authentication: Stateless JWT tokens with strict 7-day expiration.
+- Secret Protection: Mandatory JWT secret validation on server boot; fallback keys are strictly disallowed to prevent compromised signatures.
+- Session Expiration Handling: Frontend automatically intercepts 401 Unauthorized responses, clears expired credentials from client storage, and redirects to the sign-in screen.
+- Password Security: All user passwords are salted and hashed using bcryptjs (cost factor 10) before persisting to the database.
+- Input Sanitation: Email lowercasing and trimming, password minimum character restrictions, and sanitized role extraction upon registration.
+- Access Control: Multi-tiered route middleware verifies valid bearer tokens and checks administrative or staff clearance before granting access to privileged resources.
+- Safe File Ingestion: Image uploads are validated for valid image MIME types and enforced with a 5MB size ceiling before streaming to Cloudinary.
+- Environment Isolation: All production credentials and secrets are excluded from source control via .gitignore with accompanying templates.
+- Self-Service Password Reset Note: In the current development and demo scope, password reset functions directly via registered email matching. Production deployments recommend pairing this with an OTP or transactional email verification service (such as SendGrid or Nodemailer).
 
-Community votes represent public support and should not automatically determine the official priority of a complaint. Priority can instead be determined based on the severity and impact of the issue.
+---
 
-## Homepage
-
-The homepage provides a public dashboard containing:
-
-* Complaint search
-* Raise Complaint button
-* Platform statistics
-* Trending complaints
-* Recent complaints
-* Complaint categories
-* Interactive complaint map
-* Community activity
-* How It Works section
-* Call to action for reporting issues
-
-## Main Application Flow
+## Repository Structure
 
 ```text
-User
- |
- |-- Register / Login
- |
- v
-Homepage
- |
- |-- Explore Complaints
- |-- Search Complaints
- |-- View Categories
- |-- View Map
- |
- v
-Raise Complaint
- |
- |-- Category
- |-- Title
- |-- Description
- |-- Priority
- |-- Location
- |-- Attachments
- |
- v
-Public Complaint
- |
- |-- Community Voting
- |-- Comments
- |-- Status Tracking
- |
- v
-Authority Review
- |
- |-- Assign Staff
- |-- Update Status
- |-- Add Resolution Notes
- |
- v
-Resolution
- |
- v
-Closed Complaint
+Complaint_Mangement/
+├── backend/
+│   ├── config/
+│   │   └── cloudinary.js           # Cloudinary SDK configuration
+│   ├── controllers/
+│   │   ├── authController.js       # Register, login, me, logout, forgot-password
+│   │   ├── complaintController.js  # CRUD, assignment, status update, vote, comment, delete
+│   │   └── userController.js       # Admin user management and role modification
+│   ├── db/
+│   │   └── db.js                   # MongoDB connection management
+│   ├── middleware/
+│   │   ├── authMiddleware.js       # JWT bearer token verification
+│   │   ├── roleMiddleware.js       # Admin and staff role verification
+│   │   └── uploadMiddleware.js     # Multer memory storage configuration
+│   ├── models/
+│   │   ├── complaint.model.js      # Complaint schema and timeline definitions
+│   │   └── user.model.js           # User schema with secure serialization
+│   ├── routes/
+│   │   ├── authRoutes.js           # /api/auth routes
+│   │   ├── complaintRoutes.js      # /api/complaint routes
+│   │   └── userRoutes.js           # /api/users routes
+│   ├── utils/
+│   │   └── cloudinaryUpload.js     # Buffer upload stream helper
+│   ├── .env.example                # Backend environment variable template
+│   ├── index.js                    # Express app initialization and middleware
+│   └── package.json
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/             # Reusable UI cards, headers, and route guards
+│   │   ├── pages/
+│   │   │   ├── AdminDashboard.jsx  # Admin analytics, assignments, and user management
+│   │   │   ├── Home.jsx            # Landing page, marquee banner, and statistics
+│   │   │   ├── LoginRegister.jsx   # Authentication and password reset modal
+│   │   │   ├── MyGrievanceDetails.jsx # Citizen timeline and grievance detail view
+│   │   │   ├── ProblemDetails.jsx  # Public grievance view with comments and voting
+│   │   │   ├── ProblemsFeed.jsx    # Filterable grievance feed
+│   │   │   ├── Profile.jsx         # Citizen profile and history
+│   │   │   ├── StaffDashboard.jsx  # Staff assigned grievance tasks and status controls
+│   │   │   └── SubmitComplaint.jsx # Multi-field complaint submission form
+│   │   ├── services/
+│   │   │   ├── adminApi.js         # Admin-specific API calls
+│   │   │   ├── api.js              # Base fetch wrapper with 401 token interceptor
+│   │   │   ├── authapi.js          # Authentication and password recovery calls
+│   │   │   ├── complaintApi.js     # Grievance retrieval and submission calls
+│   │   │   ├── staffApi.js         # Staff status updates and task actions
+│   │   │   └── userApi.js          # User retrieval and role updates
+│   │   ├── App.jsx                 # Route routing configuration
+│   │   ├── index.css               # Design system tokens and styling
+│   │   └── main.jsx
+│   ├── .env.example                # Frontend environment variable template
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.js
+│
+├── .gitignore
+└── README.md
 ```
 
-## Core Data Models
+---
 
-### User
+## API Endpoints
 
-```text
-User
-├── id
-├── name
-├── email
-├── password
-└── role
+### Authentication (`/api/auth`)
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| POST | `/api/auth/register` | Public | Register a citizen account |
+| POST | `/api/auth/login` | Public | Authenticate user and receive JWT |
+| GET | `/api/auth/me` | Authenticated | Retrieve authenticated user profile |
+| POST | `/api/auth/logout` | Authenticated | Terminate session |
+| POST | `/api/auth/forgot-password` | Public | Reset password using registered email |
+
+### Complaints (`/api/complaint`)
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET | `/api/complaint` | Public | List all complaints |
+| GET | `/api/complaint/stats` | Public | Retrieve aggregated complaint metrics |
+| GET | `/api/complaint/:id` | Public | Retrieve specific complaint details |
+| POST | `/api/complaint` | Authenticated | Submit a complaint (multipart with image) |
+| PATCH | `/api/complaint/:id/status` | Staff / Admin | Update grievance progress status |
+| PATCH | `/api/complaint/:id/assign` | Admin | Assign grievance to staff member |
+| POST | `/api/complaint/:id/vote` | Authenticated | Upvote or remove upvote |
+| POST | `/api/complaint/:id/comments` | Authenticated | Add a comment to a complaint |
+| DELETE | `/api/complaint/:id` | Admin | Delete a complaint (only if status is Rejected) |
+
+### Users (`/api/users`)
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET | `/api/users` | Admin | List all registered users |
+| POST | `/api/users/staff` | Admin | Provision a new municipal staff account |
+| PATCH | `/api/users/:id/role` | Admin | Promote or demote user role (user, staff, admin) |
+| DELETE | `/api/users/:id` | Admin | Remove a user account |
+| PATCH | `/api/users/me` | Authenticated | Update personal profile details |
+
+---
+
+## Installation and Local Setup
+
+### Prerequisites
+- Node.js (v18 or higher recommended)
+- MongoDB instance (local or MongoDB Atlas connection string)
+- Cloudinary account for attachment storage
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/Dikshyan/ComplaintManagementSystem-Internship-Project.git
+cd ComplaintManagementSystem-Internship-Project
 ```
 
-### Complaint
-
-```text
-Complaint
-├── id
-├── userId
-├── title
-├── category
-├── description
-├── priority
-├── location
-├── attachments
-├── status
-├── assignedTo
-├── voteCount
-├── createdAt
-└── updatedAt
+### 2. Backend Configuration
+Navigate to the backend directory and install dependencies:
+```bash
+cd backend
+npm install
 ```
 
-### Vote
-
-```text
-Vote
-├── id
-├── userId
-├── complaintId
-└── createdAt
+Create a `.env` file in `backend/` using `.env.example`:
+```bash
+cp .env.example .env
 ```
 
-### Comment
-
-```text
-Comment
-├── id
-├── userId
-├── complaintId
-├── text
-└── createdAt
+Configure the environment variables:
+```env
+PORT=8080
+MONGODB_URI=mongodb://127.0.0.1:27017/civic_voice
+JWT_SECRET=your_secure_jwt_secret_key
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 ```
 
-### Complaint History
+Start the backend service:
+```bash
+# Development (with nodemon):
+npm run server
 
-```text
-ComplaintHistory
-├── id
-├── complaintId
-├── changedBy
-├── oldStatus
-├── newStatus
-├── note
-└── createdAt
+# Production mode:
+npm start
 ```
 
-## Suggested Categories
+### 3. Frontend Configuration
+Open a new terminal, navigate to the frontend directory, and install dependencies:
+```bash
+cd frontend
+npm install
+```
 
-* Roads and Infrastructure
-* Street Lights
-* Waste Management
-* Water Supply
-* Traffic
-* Public Health
-* Environment
-* Public Transportation
-* Government Services
-* Other
+Create a `.env` file in `frontend/` using `.env.example`:
+```bash
+cp .env.example .env
+```
 
-## Project Goals
+Set the API base URL to match the backend:
+```env
+VITE_API_BASE_URL=http://localhost:8080/api
+```
 
-The main goals of the platform are:
+Start the frontend development server:
+```bash
+npm run dev
+```
 
-1. Make reporting public issues simple and accessible.
-2. Allow communities to collectively support important complaints.
-3. Help authorities prioritize and manage reported issues.
-4. Provide transparency through complaint status and resolution history.
-5. Create a centralized platform for tracking community problems.
+To verify production bundle build:
+```bash
+npm run build
+```
 
-## Future Improvements
+---
 
-* Location-based complaint discovery
-* Interactive complaint heatmaps
-* Email and notification system
-* Authority verification
-* Complaint severity scoring
-* Duplicate complaint detection
-* Image-based issue classification
-* Analytics dashboard
-* Mobile application
-* AI-assisted complaint categorization
-* Public authority performance statistics
+## Production Deployment Recommendations
+
+1. Host Provider: Deploy backend on platforms supporting Node.js long-running services (Render, Railway, Fly.io, or AWS EC2).
+2. Frontend Hosting: Deploy frontend on static delivery networks (Vercel, Netlify, or Cloudflare Pages).
+3. CORS Policy: Set `origin` in `backend/index.js` to the exact production frontend domain rather than wildcard/reflection.
+4. Rate Limiting: Introduce `express-rate-limit` on authentication endpoints (`/api/auth/login`, `/api/auth/forgot-password`).
+5. Transactional Email: Implement an SMTP service (such as Nodemailer with SendGrid or AWS SES) to send OTP verification codes for email confirmation and password resets.
+
+---
 
 ## License
 
-This project is developed for educational and project development purposes.
+This project is developed for educational and internship evaluation purposes.
