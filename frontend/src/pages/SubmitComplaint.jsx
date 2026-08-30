@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FileText, MapPin, AlertOctagon, UploadCloud, ChevronRight, HelpCircle, Navigation } from 'lucide-react';
-import { submitIssue, getCurrentUser } from '../services/client';
+import { submitIssue } from '../services/complaintApi';
+import { getCurrentUser } from '../services/authapi';
 
 export function SubmitComplaint() {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export function SubmitComplaint() {
   const [location, setLocation] = useState('');
   const [priority, setPriority] = useState('Medium');
   const [imageName, setImageName] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState('');
@@ -40,14 +42,16 @@ export function SubmitComplaint() {
     );
   };
 
-  // Mock upload interaction
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setImageName(e.target.files[0].name);
+      const file = e.target.files[0];
+      setImageName(file.name);
+      setSelectedFile(file);
     }
   };
 
   const handleSubmit = async (e) => {
+    e.preventDefault();
     if (!getCurrentUser()) {
       toast.error('Please sign in to register a complaint');
       navigate('/login');
@@ -64,11 +68,12 @@ export function SubmitComplaint() {
 
     try {
       const finalDescription = description.trim() || `No additional details provided for this ${category} issue.`;
-      await submitIssue(title, finalDescription, category, location, priority);
+      const attachments = selectedFile ? [selectedFile] : [];
+      await submitIssue(title, finalDescription, category, location, priority, attachments);
       setIsSubmitting(false);
       navigate('/problems');
     } catch (err) {
-      setError('An error occurred during submission. Please try again.');
+      setError(err.message || 'An error occurred during submission. Please try again.');
       setIsSubmitting(false);
     }
   };
@@ -172,9 +177,9 @@ export function SubmitComplaint() {
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
             >
-              <option value="Low">🟢 Low (No immediate hazard)</option>
-              <option value="Medium">🟡 Medium (Disruption caused)</option>
-              <option value="High">🔴 High (Safety concern/gridlock)</option>
+              <option value="Low">Low (No immediate hazard)</option>
+              <option value="Medium">Medium (Disruption caused)</option>
+              <option value="High">High (Safety concern/gridlock)</option>
             </select>
           </div>
         </div>

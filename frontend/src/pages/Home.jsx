@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, PlusCircle, Award, CheckCircle, Flame, Users, Zap, ShieldAlert } from 'lucide-react';
-import { getIssues, getStats, fetchComplaintsApi } from '../services/client';
+import { getIssues, getStats, fetchComplaintsApi } from '../services/complaintApi';
 import { ProblemCard } from '../components/ProblemCard';
 
 export function Home() {
@@ -32,12 +32,12 @@ export function Home() {
   // Build real marquee strings from recent complaints
   const marqueeItems = allIssues.slice(0, 6).map(issue => {
     if (issue.status === 'Resolved' || issue.status === 'RESOLVED') {
-      return `🎉 RESOLVED: ${issue.title} — ${issue.location}`;
+      return `RESOLVED: ${issue.title} — ${issue.location}`;
     }
     if (issue.upvotes > 3) {
-      return `⚡ TRENDING: ${issue.title} — ${issue.upvotes} votes — ${issue.location}`;
+      return `TRENDING: ${issue.title} — ${issue.upvotes} votes — ${issue.location}`;
     }
-    return `🚨 REPORTED: ${issue.title} — ${issue.location}`;
+    return `REPORTED: ${issue.title} — ${issue.location}`;
   });
 
   return (
@@ -183,7 +183,7 @@ export function Home() {
             gap: '2.5rem' 
           }}>
             {trendingIssues.map((issue) => (
-              <ProblemCard key={issue.id} problem={issue} onVote={handleVoteToggle} />
+              <ProblemCard key={issue.id} problem={issue} onVote={handleVoteToggle} showImage={false} />
             ))}
           </div>
         </section>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, HelpCircle, PlusCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getIssues, fetchComplaintsApi } from '../services/client';
+import { getIssues, fetchComplaintsApi } from '../services/complaintApi';
 import { ProblemCard } from '../components/ProblemCard';
 
 const CATEGORIES = [
@@ -124,9 +124,9 @@ export function ProblemsFeed() {
               onChange={(e) => setSelectedPriority(e.target.value)}
             >
               <option value="All">All Priorities</option>
-              <option value="High">🔴 High Priority</option>
-              <option value="Medium">🟡 Medium Priority</option>
-              <option value="Low">🟢 Low Priority</option>
+              <option value="High">High Priority</option>
+              <option value="Medium">Medium Priority</option>
+              <option value="Low">Low Priority</option>
             </select>
           </div>
 
@@ -138,9 +138,9 @@ export function ProblemsFeed() {
               onChange={(e) => setSelectedStatus(e.target.value)}
             >
               <option value="All">All Statuses</option>
-              <option value="OPEN">🔴 Open</option>
-              <option value="IN_PROGRESS">🟡 In Progress</option>
-              <option value="RESOLVED">🟢 Resolved</option>
+              <option value="OPEN">Open</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="RESOLVED">Resolved</option>
             </select>
           </div>
 
@@ -151,9 +151,9 @@ export function ProblemsFeed() {
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
             >
-              <option value="newest">🕒 Newest First</option>
-              <option value="votes">🔥 Most Upvoted</option>
-              <option value="discussed">💬 Most Discussed</option>
+              <option value="newest">Newest First</option>
+              <option value="votes">Most Upvoted</option>
+              <option value="discussed">Most Discussed</option>
             </select>
           </div>
 

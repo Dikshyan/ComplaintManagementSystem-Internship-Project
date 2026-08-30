@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { User, Mail, Lock, ShieldCheck, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { login, register, getCurrentUser, fetchCurrentUser } from '../services/client';
+import { login, register, getCurrentUser, fetchCurrentUser } from '../services/authapi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AVATAR_OPTIONS = [
-  { emoji: '🦁', color: 'var(--yellow)', label: 'Lion' },
-  { emoji: '🦉', color: 'var(--lavender)', label: 'Owl' },
-  { emoji: '🐼', color: 'var(--lime)', label: 'Panda' },
-  { emoji: '🦊', color: 'var(--coral)', label: 'Fox' },
-  { emoji: '🐸', color: 'var(--white)', label: 'Frog' },
-  { emoji: '🦄', color: 'var(--lavender)', label: 'Unicorn' }
+  { label: 'Theme 1', color: 'var(--yellow)' },
+  { label: 'Theme 2', color: 'var(--lavender)' },
+  { label: 'Theme 3', color: 'var(--lime)' },
+  { label: 'Theme 4', color: 'var(--coral)' },
+  { label: 'Theme 5', color: 'var(--white)' },
+  { label: 'Theme 6', color: 'var(--lavender)' }
 ];
 
 export function LoginRegister() {
@@ -107,7 +107,7 @@ export function LoginRegister() {
       if (isLoginView) {
         loggedUser = await login(username, password);
       } else {
-        loggedUser = await register(username, email, password, selectedAvatar.emoji);
+        loggedUser = await register(username, email, password, selectedAvatar.label);
       }
       setLoading(false);
       if (loggedUser && loggedUser.role === 'admin') {
@@ -466,15 +466,16 @@ export function LoginRegister() {
                         gap: '0.5rem' 
                       }}>
                         {AVATAR_OPTIONS.map((opt) => {
-                          const isSelected = selectedAvatar.emoji === opt.emoji;
+                          const isSelected = selectedAvatar.label === opt.label;
                           return (
                             <button
-                              key={opt.emoji}
+                              key={opt.label}
                               type="button"
                               onClick={() => setSelectedAvatar(opt)}
                               style={{
-                                padding: '0.5rem 0',
-                                fontSize: '1.5rem',
+                                padding: '0.4rem 0',
+                                fontSize: '0.75rem',
+                                fontWeight: '700',
                                 backgroundColor: opt.color,
                                 border: '2px solid var(--primary-color)',
                                 boxShadow: isSelected ? '2px 2px 0px var(--primary-color)' : 'none',
@@ -487,7 +488,7 @@ export function LoginRegister() {
                               }}
                               title={opt.label}
                             >
-                              {opt.emoji}
+                              {opt.label}
                             </button>
                           );
                         })}

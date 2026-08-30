@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Calendar, Mail, FileText, ArrowUp, Info, PlusCircle, LogOut } from 'lucide-react';
-import { getCurrentUser, getIssues, logout, fetchCurrentUser, fetchComplaintsApi, fetchMyComplaintsApi } from '../services/client';
+import { getCurrentUser, logout, fetchCurrentUser } from '../services/authapi';
+import { getIssues, fetchComplaintsApi, fetchMyComplaintsApi } from '../services/complaintApi';
 import { ProblemCard } from '../components/ProblemCard';
 
 export function Profile() {
@@ -181,7 +182,7 @@ export function Profile() {
                   {issue.assignedTo && (
                     <div style={{ backgroundColor: "var(--bg-color)", border: "2px solid var(--primary-color)", padding: "0.75rem", marginBottom: "1rem" }}>
                       <div style={{ fontWeight: "800", fontSize: "0.8rem", textTransform: "uppercase" }}>
-                        👤 Assigned Staff Officer:
+                        Assigned Staff Officer:
                       </div>
                       <div style={{ fontSize: "0.9rem", fontWeight: "700", marginTop: "0.2rem" }}>
                         {issue.assignedTo.name} ({issue.assignedDepartment || issue.assignedTo.department || "Municipal Officer"})
@@ -192,7 +193,7 @@ export function Profile() {
 
                 <div style={{ borderTop: "2px solid var(--primary-color)", paddingTop: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
                   <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: "600" }}>
-                    <span>📍 {issue.location}</span> • <span>📅 {issue.dateReported}</span>
+                    <span>{issue.location}</span> • <span>{issue.dateReported}</span>
                   </div>
 
                   <Link to={`/my-grievance/${issue.id}`} className="brutal-btn small yellow" style={{ textDecoration: "none" }}>

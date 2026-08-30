@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, MapPin, Calendar, User, MessageSquare, Send, CheckCircle2, AlertCircle, Clock, ShieldCheck, Building } from 'lucide-react';
-import { getIssueById, addComment, fetchComplaintsApi } from '../services/client';
+import { getIssueById, addComment, fetchComplaintsApi } from '../services/complaintApi';
 
 export function MyGrievanceDetails() {
   const { id } = useParams();
@@ -71,10 +71,14 @@ export function MyGrievanceDetails() {
   };
 
   const getStatusBadge = (stat) => {
-    if (stat === 'RESOLVED') return <span className="badge status-resolved">RESOLVED</span>;
-    if (stat === 'IN_PROGRESS') return <span className="badge status-progress">IN PROGRESS</span>;
-    if (stat === 'ASSIGNED') return <span className="badge" style={{ backgroundColor: 'var(--coral)', color: 'var(--white)', fontWeight: 'bold' }}>ASSIGNED</span>;
-    return <span className="badge status-open">OPEN</span>;
+    if (!stat) return <span className="badge status-open">Pending</span>;
+    const s = stat.toUpperCase();
+    if (s === 'RESOLVED') return <span className="badge status-resolved">RESOLVED</span>;
+    if (s === 'IN_PROGRESS' || s === 'IN PROGRESS') return <span className="badge status-progress">IN PROGRESS</span>;
+    if (s === 'ASSIGNED') return <span className="badge" style={{ backgroundColor: 'var(--coral)', color: 'var(--white)', fontWeight: 'bold' }}>ASSIGNED</span>;
+    if (s === 'UNDER REVIEW') return <span className="badge" style={{ backgroundColor: 'var(--yellow)', fontWeight: 'bold' }}>UNDER REVIEW</span>;
+    if (s === 'REJECTED') return <span className="badge" style={{ backgroundColor: 'var(--coral)', color: 'var(--white)', fontWeight: 'bold' }}>REJECTED</span>;
+    return <span className="badge status-open">{stat.toUpperCase()}</span>;
   };
 
   return (
@@ -105,14 +109,28 @@ export function MyGrievanceDetails() {
             </h1>
           </div>
 
-          {/* Issue Image (if available) */}
-          {problem.image && (
-            <div className="brutal-card" style={{ padding: '0', overflow: 'hidden', height: 'auto', maxHeight: '450px' }}>
-              <img 
-                src={problem.image} 
-                alt={problem.title} 
-                style={{ width: '100%', height: '100%', maxHeight: '450px', objectFit: 'cover', display: 'block' }}
-              />
+          {/* Issue Image / Cloudinary Attachments */}
+          {((problem.attachments && problem.attachments.length > 0) || problem.image) && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+              {problem.attachments && problem.attachments.length > 0 ? (
+                problem.attachments.map((url, idx) => (
+                  <div key={idx} className="brutal-card" style={{ padding: '0', overflow: 'hidden', flex: '1 1 300px', maxHeight: '450px' }}>
+                    <img 
+                      src={url} 
+                      alt={`${problem.title} attachment ${idx + 1}`} 
+                      style={{ width: '100%', height: '100%', maxHeight: '450px', objectFit: 'cover', display: 'block' }}
+                    />
+                  </div>
+                ))
+              ) : (
+                <div className="brutal-card" style={{ padding: '0', overflow: 'hidden', width: '100%', maxHeight: '450px' }}>
+                  <img 
+                    src={problem.image} 
+                    alt={problem.title} 
+                    style={{ width: '100%', height: '100%', maxHeight: '450px', objectFit: 'cover', display: 'block' }}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -143,7 +161,7 @@ export function MyGrievanceDetails() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '1rem' }}>
                 <div><strong>Officer Name:</strong> {problem.assignedTo.name}</div>
                 <div><strong>Official Email:</strong> {problem.assignedTo.email}</div>
-                <div><strong>Department:</strong> 🏢 {problem.assignedDepartment || problem.assignedTo.department || 'Municipal Public Services'}</div>
+                <div><strong>Department:</strong> {problem.assignedDepartment || problem.assignedTo.department || 'Municipal Public Services'}</div>
               </div>
             </div>
           ) : (
@@ -238,7 +256,7 @@ export function MyGrievanceDetails() {
               <div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Community Supporters</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold', color: 'var(--coral)' }}>
-                  👍 {problem.upvotes || problem.voteCount || 0} Citizens Upvoted
+                  {problem.upvotes || problem.voteCount || 0} Citizens Upvoted
                 </div>
               </div>
             </div>

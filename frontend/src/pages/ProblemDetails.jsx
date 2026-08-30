@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Calendar, User, MessageSquare, ArrowUp, Send, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { getIssueById, upvoteIssue, hasUpvoted, addComment, fetchComplaintsApi, getCurrentUser } from '../services/client';
+import { getIssueById, upvoteIssue, hasUpvoted, addComment, fetchComplaintsApi } from '../services/complaintApi';
+import { getCurrentUser } from '../services/authapi';
 
 export function ProblemDetails() {
   const { id } = useParams();
@@ -139,14 +140,28 @@ export function ProblemDetails() {
             </h1>
           </div>
 
-          {/* Issue Image (if available) */}
-          {problem.image && (
-            <div className="brutal-card" style={{ padding: '0', overflow: 'hidden', height: 'auto', maxHeight: '450px' }}>
-              <img 
-                src={problem.image} 
-                alt={problem.title} 
-                style={{ width: '100%', height: '100%', maxHeight: '450px', objectFit: 'cover', display: 'block' }}
-              />
+          {/* Issue Image / Cloudinary Attachments */}
+          {((problem.attachments && problem.attachments.length > 0) || problem.image) && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+              {problem.attachments && problem.attachments.length > 0 ? (
+                problem.attachments.map((url, idx) => (
+                  <div key={idx} className="brutal-card" style={{ padding: '0', overflow: 'hidden', flex: '1 1 300px', maxHeight: '450px' }}>
+                    <img 
+                      src={url} 
+                      alt={`${problem.title} attachment ${idx + 1}`} 
+                      style={{ width: '100%', height: '100%', maxHeight: '450px', objectFit: 'cover', display: 'block' }}
+                    />
+                  </div>
+                ))
+              ) : (
+                <div className="brutal-card" style={{ padding: '0', overflow: 'hidden', width: '100%', maxHeight: '450px' }}>
+                  <img 
+                    src={problem.image} 
+                    alt={problem.title} 
+                    style={{ width: '100%', height: '100%', maxHeight: '450px', objectFit: 'cover', display: 'block' }}
+                  />
+                </div>
+              )}
             </div>
           )}
 

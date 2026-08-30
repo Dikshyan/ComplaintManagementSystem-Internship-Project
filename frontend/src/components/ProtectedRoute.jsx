@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { getCurrentUser } from '../services/client';
+import { getCurrentUser } from '../services/authapi';
 
 export function ProtectedRoute({ children, roleRequired }) {
   const currentUser = getCurrentUser();

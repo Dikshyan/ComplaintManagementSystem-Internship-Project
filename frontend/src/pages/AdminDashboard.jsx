@@ -18,18 +18,11 @@ import {
   Check,
   UserCheck
 } from "lucide-react";
-import {
-  getCurrentUser,
-  getStats,
-  getIssues,
-  fetchComplaintsApi,
-  updateIssueStatus,
-  fetchUsersApi,
-  createStaffAccountApi,
-  deleteUserApi,
-  assignComplaintApi,
-  logout
-} from "../services/client";
+import { getCurrentUser, logout } from "../services/authapi";
+import { getStats, getIssues, fetchComplaintsApi } from "../services/complaintApi";
+import { updateIssueStatus } from "../services/staffApi";
+import { createStaffAccountApi, deleteUserApi, assignComplaintApi } from "../services/adminApi";
+import { fetchUsersApi } from "../services/userApi";
 import { ShieldAlert, Plus, X as XIcon, Eye, EyeOff, Trash2 } from "lucide-react";
 
 export function AdminDashboard() {
@@ -529,7 +522,7 @@ export function AdminDashboard() {
                         <option value="">-- Assign Staff --</option>
                         {staffUsers.map((st) => (
                           <option key={st.id || st._id} value={st.id || st._id}>
-                            👤 {st.name}
+                            {st.name}
                           </option>
                         ))}
                       </select>
@@ -591,7 +584,7 @@ export function AdminDashboard() {
                       <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.8rem", fontWeight: "bold" }}>{issue.id}</span>
                       {issue.assignedTo && (
                         <span className="badge" style={{ backgroundColor: "var(--lavender)", color: "var(--primary-color)", fontWeight: "bold" }}>
-                          👤 ASSIGNED: {issue.assignedTo.name} {issue.assignedDepartment ? `(${issue.assignedDepartment})` : ''}
+                          ASSIGNED: {issue.assignedTo.name} {issue.assignedDepartment ? `(${issue.assignedDepartment})` : ''}
                         </span>
                       )}
                     </div>
@@ -607,9 +600,9 @@ export function AdminDashboard() {
                     </p>
 
                     <div style={{ display: "flex", gap: "1rem", fontSize: "0.85rem", fontWeight: "600", color: "var(--text-secondary)" }}>
-                      <span>📍 {issue.location}</span>
-                      <span>👤 {issue.reporterName}</span>
-                      <span>📅 {issue.dateReported}</span>
+                      <span>{issue.location}</span>
+                      <span>{issue.reporterName}</span>
+                      <span>{issue.dateReported}</span>
                       <span style={{ color: "var(--coral)", fontWeight: "bold" }}>▲ {issue.upvotes} Upvotes</span>
                     </div>
                   </div>
@@ -628,7 +621,7 @@ export function AdminDashboard() {
                         <option value="">-- Assign Staff --</option>
                         {staffUsers.map((st) => (
                           <option key={st.id || st._id} value={st.id || st._id}>
-                            👤 {st.name}
+                            {st.name}
                           </option>
                         ))}
                       </select>
@@ -716,8 +709,8 @@ export function AdminDashboard() {
                     PROVISION STAFF LOGIN
                   </h2>
                   {staffModalError && (
-                    <div className="brutal-card coral" style={{ color: "var(--white)", padding: "0.75rem", marginBottom: "1rem", fontSize: "0.85rem", fontWeight: "bold" }}>
-                      ⚠️ {staffModalError}
+                    <div style={{ padding: "0.75rem", backgroundColor: "#fee2e2", border: "2px solid #ef4444", color: "#b91c1c", fontWeight: "bold", fontSize: "0.85rem", marginBottom: "1rem" }}>
+                      {staffModalError}
                     </div>
                   )}
 
@@ -899,7 +892,7 @@ export function AdminDashboard() {
                     {usr.department && (
                       <div style={{ marginBottom: "0.75rem" }}>
                         <span className="badge" style={{ backgroundColor: "var(--yellow)", fontSize: "0.75rem", padding: "0.2rem 0.5rem" }}>
-                          🏢 {usr.department}
+                          {usr.department}
                         </span>
                       </div>
                     )}
@@ -1001,7 +994,7 @@ export function AdminDashboard() {
                       {selectedStaffDetail.staff.name}
                     </h2>
                     <div style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginTop: "0.2rem" }}>
-                      {selectedStaffDetail.staff.email} • 🏢 {selectedStaffDetail.staff.department || "General Municipal Services"}
+                      {selectedStaffDetail.staff.email} • {selectedStaffDetail.staff.department || "General Municipal Services"}
                     </div>
                   </div>
 
@@ -1044,8 +1037,8 @@ export function AdminDashboard() {
                           </div>
                           <h4 style={{ margin: "0.4rem 0", fontSize: "1.05rem" }}>{task.title}</h4>
                           <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", display: "flex", gap: "0.75rem" }}>
-                            <span>📍 {task.location}</span>
-                            <span>📅 {task.dateReported}</span>
+                            <span>{task.location}</span>
+                            <span>{task.dateReported}</span>
                           </div>
                           <div style={{ marginTop: "0.75rem", textAlign: "right" }}>
                             <Link to={`/problems/${task.id}`} className="brutal-btn small yellow" onClick={() => setSelectedStaffDetail(null)} style={{ textDecoration: "none" }}>
@@ -1093,7 +1086,6 @@ export function AdminDashboard() {
               </div>
 
               <span
-                className="badge"
                 style={{
                   backgroundColor: "var(--coral)",
                   color: "var(--white)",
@@ -1103,7 +1095,7 @@ export function AdminDashboard() {
                   display: "inline-block"
                 }}
               >
-                🚀 UNDER DEVELOPMENT
+                UNDER DEVELOPMENT
               </span>
 
               <h2

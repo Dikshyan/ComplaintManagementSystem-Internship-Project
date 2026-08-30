@@ -5,11 +5,14 @@ const { connectDB } = require("./db/db");
 const authRoutes = require("./routes/authRoutes");
 const complaintRoutes = require("./routes/complaintRoutes");
 const userRoutes = require("./routes/userRoutes");
+const { connectCloudinary } = require("./config/cloudinary");
 
 const app = express();
 const port = process.env.PORT || 8080;
 
 connectDB();
+connectCloudinary();
+
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
@@ -19,16 +22,14 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/health", (req, res) => {
-    res.json({
-        status: "ok",
-        message: "Complaint Management API is running"
-    });
+  res.json({
+    status: "ok",
+    message: "Complaint Management API is running"
+  });
 });
 
-
-app.use("/api/complaint", complaintRoutes);
-
 app.use("/api/auth", authRoutes);
+app.use("/api/complaint", complaintRoutes);
 app.use("/api/users", userRoutes);
 
 app.listen(port, () => {

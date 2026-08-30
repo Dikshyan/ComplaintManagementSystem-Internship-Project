@@ -3,15 +3,25 @@ const jwt = require("jsonwebtoken");
 const { userModel } = require("../models/user.model");
 
 const createToken = (user) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET is not configured");
+  }
+
   return jwt.sign(
-    { id: user._id, email: user.email, role: user.role },
-    process.env.JWT_SECRET || "complaint-secret-key",
-    { expiresIn: "7d" }
+    {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "7d",
+    }
   );
 };
 
 const registerUser = async (req, res) => {
-try {
+  try {
     const { name, email, password } = req.body; // role removed from destructure
 
     if (!name || !email || !password) {

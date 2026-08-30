@@ -1,35 +1,61 @@
 const { complaintModel } = require("../models/complaint.model");
+const { userModel } = require("../models/user.model");
+const { uploadToCloudinary } = require("../utils/cloudinaryUpload");
 
 const createComplaint = async (req, res) => {
   try {
+    // Only citizens can create complaints
     if (req.user && (req.user.role === "admin" || req.user.role === "staff")) {
-      return res.status(403).send({ message: "Filing grievances is reserved for public citizens" });
+      return res.status(403).json({
+        message: "Filing grievances is reserved for public citizens",
+      });
     }
 
-    const { title, category, description, priority, location, attachments } = req.body;
+    const { title, category, description, priority, location } = req.body;
 
     if (!title || !category || !description || !priority || !location) {
-      return res.status(400).send({ message: "All required fields must be provided" });
+      return res.status(400).json({
+        message: "All required fields must be provided",
+      });
     }
 
     const userId = req.user._id;
 
+    // Upload images to Cloudinary
+    const attachments = [];
+
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const result = await uploadToCloudinary(file.buffer, "complaints");
+
+        attachments.push(result.secure_url);
+      }
+    }
+
+    // Create complaint
     const complaint = await complaintModel.create({
       userId,
-      title,
+      title: title.trim(),
       category,
-      description,
+      description: description.trim(),
       priority,
-      location,
-      attachments: attachments || [],
+      location: location.trim(),
+      attachments,
       status: "Pending",
-      voteCount: 0
+      voteCount: 0,
+      votedBy: [],
     });
 
-    return res.status(201).send({ message: "Complaint Created Successfully", complaint });
+    return res.status(201).json({
+      message: "Complaint Created Successfully",
+      complaint,
+    });
   } catch (error) {
-    console.error("Internal server error:", error);
-    return res.status(500).send({ message: error.message || "Internal server error" });
+    console.error("Create complaint error:", error);
+
+    return res.status(500).json({
+      message: "Failed to create complaint.",
+    });
   }
 };
 
@@ -70,22 +96,63 @@ const updateComplaintStatus = async (req, res) => {
     const { status } = req.body;
 
     if (!status) {
-      return res.status(400).send({ message: "Status field is required" });
+      return res.status(400).json({
+        message: "Status field is required",
+      });
     }
 
-    const complaint = await complaintModel
-      .findByIdAndUpdate(id, { status }, { returnDocument: 'after' })
-      .populate("userId", "name email username")
-      .populate("assignedTo", "name email department");
+    const allowedStatuses = [
+      "Pending",
+      "Under Review",
+      "In Progress",
+      "Resolved",
+      "Rejected",
+      "Assigned",
+    ];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        message: "Invalid complaint status",
+      });
+    }
+
+    const complaint = await complaintModel.findById(id);
 
     if (!complaint) {
-      return res.status(404).send({ message: "Complaint not found" });
+      return res.status(404).json({
+        message: "Complaint not found",
+      });
     }
 
-    return res.status(200).send({ message: "Status updated successfully", complaint });
+    // Staff can only update complaints assigned to them
+    if (req.user.role === "staff") {
+      if (
+        !complaint.assignedTo ||
+        complaint.assignedTo.toString() !== req.user._id.toString()
+      ) {
+        return res.status(403).json({
+          message: "You are not assigned to this complaint",
+        });
+      }
+    }
+
+    complaint.status = status;
+
+    await complaint.save();
+
+    await complaint.populate("userId", "name email username");
+    await complaint.populate("assignedTo", "name email department");
+
+    return res.status(200).json({
+      message: "Status updated successfully",
+      complaint,
+    });
   } catch (error) {
     console.error("Error updating status:", error);
-    return res.status(500).send({ message: "Internal server error" });
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
   }
 };
 
@@ -94,26 +161,59 @@ const assignComplaint = async (req, res) => {
     const { id } = req.params;
     const { assignedTo, assignedDepartment } = req.body;
 
-    const updates = {
-      status: "ASSIGNED"
-    };
-
-    if (assignedTo) updates.assignedTo = assignedTo;
-    if (assignedDepartment) updates.assignedDepartment = assignedDepartment;
-
-    const complaint = await complaintModel
-      .findByIdAndUpdate(id, updates, { returnDocument: 'after' })
-      .populate("userId", "name email username")
-      .populate("assignedTo", "name email department");
-
-    if (!complaint) {
-      return res.status(404).send({ message: "Complaint not found" });
+    if (!assignedTo) {
+      return res.status(400).json({
+        message: "Staff member is required",
+      });
     }
 
-    return res.status(200).send({ message: "Complaint assigned successfully", complaint });
+    // Verify that the selected user exists and is actually staff
+    const staffUser = await userModel
+      .findOne({
+        _id: assignedTo,
+        role: "staff",
+      })
+      .select("_id name email department");
+
+    if (!staffUser) {
+      return res.status(400).json({
+        message: "Invalid staff member.",
+      });
+    }
+
+    // Check that the complaint exists
+    const complaint = await complaintModel.findById(id);
+
+    if (!complaint) {
+      return res.status(404).json({
+        message: "Complaint not found",
+      });
+    }
+
+    complaint.assignedTo = staffUser._id;
+    complaint.status = "Assigned";
+
+    if (assignedDepartment) {
+      complaint.assignedDepartment = assignedDepartment;
+    } else if (staffUser.department) {
+      complaint.assignedDepartment = staffUser.department;
+    }
+
+    await complaint.save();
+
+    await complaint.populate("userId", "name email username");
+    await complaint.populate("assignedTo", "name email department");
+
+    return res.status(200).json({
+      message: "Complaint assigned successfully",
+      complaint,
+    });
   } catch (error) {
     console.error("Error assigning complaint:", error);
-    return res.status(500).send({ message: "Internal server error" });
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
   }
 };
 
@@ -121,16 +221,27 @@ const getComplaintStats = async (req, res) => {
   try {
     const complaints = await complaintModel.find();
     const total = complaints.length;
-    const resolved = complaints.filter(c => (c.status || '').toLowerCase() === "resolved").length;
-    const progress = complaints.filter(c => {
-      const s = (c.status || '').toLowerCase();
-      return s === "in progress" || s === "under review" || s === "pending" || s === "assigned" || s === "in_progress";
+    const resolved = complaints.filter(
+      (c) => (c.status || "").toLowerCase() === "resolved",
+    ).length;
+    const progress = complaints.filter((c) => {
+      const s = (c.status || "").toLowerCase();
+      return (
+        s === "in progress" ||
+        s === "under review" ||
+        s === "pending" ||
+        s === "assigned" ||
+        s === "in_progress"
+      );
     }).length;
     const active = total - resolved;
-    const totalVotes = complaints.reduce((sum, c) => sum + (c.voteCount || 0), 0);
+    const totalVotes = complaints.reduce(
+      (sum, c) => sum + (c.voteCount || 0),
+      0,
+    );
 
     return res.status(200).send({
-      stats: { total, resolved, progress, active, totalVotes }
+      stats: { total, resolved, progress, active, totalVotes },
     });
   } catch (error) {
     console.error("Error calculating stats:", error);
@@ -140,30 +251,72 @@ const getComplaintStats = async (req, res) => {
 
 const voteOnComplaint = async (req, res) => {
   try {
-    if (req.user && (req.user.role === "admin" || req.user.role === "staff")) {
-      return res.status(403).send({ message: "Voting is restricted to public citizens" });
+    if (req.user.role === "admin" || req.user.role === "staff") {
+      return res.status(403).json({
+        message: "Voting is restricted to public citizens",
+      });
     }
 
     const { id } = req.params;
     const { direction } = req.body;
 
-    const increment = direction === "down" ? -1 : 1;
+    if (direction !== "up" && direction !== "down") {
+      return res.status(400).json({
+        message: "Invalid vote direction",
+      });
+    }
+
     const complaint = await complaintModel.findById(id);
 
     if (!complaint) {
-      return res.status(404).send({ message: "Complaint not found" });
+      return res.status(404).json({
+        message: "Complaint not found",
+      });
     }
 
-    complaint.voteCount = Math.max(0, (complaint.voteCount || 0) + increment);
+    const userId = req.user._id;
+
+    const alreadyVoted = complaint.votedBy.some(
+      (voterId) => voterId.toString() === userId.toString(),
+    );
+
+    if (direction === "up") {
+      if (alreadyVoted) {
+        return res.status(400).json({
+          message: "You have already voted on this complaint",
+        });
+      }
+
+      complaint.votedBy.push(userId);
+      complaint.voteCount += 1;
+    }
+
+    if (direction === "down") {
+      if (!alreadyVoted) {
+        return res.status(400).json({
+          message: "You have not voted on this complaint",
+        });
+      }
+
+      complaint.votedBy = complaint.votedBy.filter(
+        (voterId) => voterId.toString() !== userId.toString(),
+      );
+
+      complaint.voteCount = Math.max(0, complaint.voteCount - 1);
+    }
+
     await complaint.save();
 
-    return res.status(200).send({
-      message: increment > 0 ? "Vote added" : "Vote removed",
-      voteCount: complaint.voteCount
+    return res.status(200).json({
+      message: direction === "up" ? "Vote added" : "Vote removed",
+      voteCount: complaint.voteCount,
     });
   } catch (error) {
     console.error("Error voting on complaint:", error);
-    return res.status(500).send({ message: "Internal server error" });
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
   }
 };
 
@@ -185,23 +338,28 @@ const addCommentToComplaint = async (req, res) => {
     const comment = {
       userId: req.user._id,
       text: text.trim(),
-      date: new Date()
+      date: new Date(),
     };
 
     complaint.comments.push(comment);
     await complaint.save();
 
-    const populated = await complaintModel.findById(id).populate("comments.userId", "name username");
+    const populated = await complaintModel
+      .findById(id)
+      .populate("comments.userId", "name username");
     const addedComment = populated.comments[populated.comments.length - 1];
 
     return res.status(201).send({
       message: "Comment added",
       comment: {
         id: addedComment._id,
-        user: addedComment.userId?.name || addedComment.userId?.username || "Citizen",
+        user:
+          addedComment.userId?.name ||
+          addedComment.userId?.username ||
+          "Citizen",
         text: addedComment.text,
-        date: addedComment.date.toISOString().split("T")[0]
-      }
+        date: addedComment.date.toISOString().split("T")[0],
+      },
     });
   } catch (error) {
     console.error("Error adding comment:", error);
@@ -217,5 +375,5 @@ module.exports = {
   assignComplaint,
   getComplaintStats,
   voteOnComplaint,
-  addCommentToComplaint
+  addCommentToComplaint,
 };
