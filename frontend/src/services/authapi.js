@@ -91,3 +91,12 @@ export function logout() {
     localStorage.removeItem("currentUser");
     localStorage.removeItem("authToken");
 }
+
+export async function forgotPasswordApi(email, newPassword) {
+    const data = await apiRequest("/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email, newPassword })
+    });
+    toast.success("Password reset successfully! You can now sign in.");
+    return data;
+}
