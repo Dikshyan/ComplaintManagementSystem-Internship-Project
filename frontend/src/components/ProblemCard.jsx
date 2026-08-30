@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MapPin, ArrowUp, MessageSquare, Calendar, User } from 'lucide-react';
+import { MapPin, ArrowUp, Calendar, User, Building } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { upvoteIssue, hasUpvoted, getCurrentUser } from '../services/client';
+import { upvoteIssue, hasUpvoted } from '../services/complaintApi';
+import { getCurrentUser } from '../services/authapi';
 
-export function ProblemCard({ problem, onVote }) {
+export function ProblemCard({ problem, onVote, showImage = false }) {
   const navigate = useNavigate();
   const [votes, setVotes] = useState(problem.upvotes);
   const [isUpvoted, setIsUpvoted] = useState(hasUpvoted(problem.id));
+
+  const department = problem.assignedDepartment || (typeof problem.assignedTo === 'object' ? problem.assignedTo?.department : '') || '';
+  const assignedStaffName = typeof problem.assignedTo === 'object' ? problem.assignedTo?.name : '';
+
+  const displayImage = showImage ? (problem.image || (problem.attachments && problem.attachments.length > 0 ? problem.attachments[0] : null)) : null;
 
   const handleVote = async (e) => {
     e.preventDefault(); // Stop navigation if clicked inside card Link
@@ -29,7 +35,6 @@ export function ProblemCard({ problem, onVote }) {
     }
   };
 
-  // Assign accent colors dynamically based on category for rich design
   const getCategoryColor = (cat) => {
     switch (cat) {
       case 'Electricity': return 'var(--coral)';
@@ -41,18 +46,27 @@ export function ProblemCard({ problem, onVote }) {
   };
 
   const getPriorityClass = (pri) => {
-    return `priority-${pri.toLowerCase()}`;
+    return `priority-${(pri || 'medium').toLowerCase()}`;
   };
 
   const getStatusClass = (stat) => {
-    if (stat === 'IN_PROGRESS') return 'status-progress';
-    return `status-${stat.toLowerCase()}`;
+    if (!stat) return 'status-open';
+    const s = stat.toLowerCase().replace(/\s+/g, '_');
+    if (s === 'in_progress' || s === 'in progress') return 'status-progress';
+    if (s === 'resolved') return 'status-resolved';
+    return `status-${s}`;
+  };
+
+  const formatId = (id) => {
+    if (!id) return '';
+    if (id.length > 8) return `#${id.slice(-8)}`;
+    return `#${id}`;
   };
 
   return (
     <div className="brutal-card problem-card hover-rotate" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Card Visual Header */}
-      {problem.image && (
+      {displayImage && (
         <div style={{ 
           height: '200px', 
           margin: '-2rem -2rem 1.5rem -2rem', 
@@ -61,13 +75,13 @@ export function ProblemCard({ problem, onVote }) {
           position: 'relative'
         }}>
           <img 
-            src={problem.image} 
+            src={displayImage} 
             alt={problem.title} 
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
-          <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', gap: '0.5rem' }}>
+          <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             <span className={`badge ${getStatusClass(problem.status)}`}>
-              {problem.status.replace('_', ' ')}
+              {problem.status ? problem.status.replace('_', ' ') : 'Pending'}
             </span>
             <span className={`badge ${getPriorityClass(problem.priority)}`}>
               {problem.priority} Priority
@@ -76,21 +90,61 @@ export function ProblemCard({ problem, onVote }) {
         </div>
       )}
 
-      {/* Category Tag */}
-      <div style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span 
-          className="badge" 
-          style={{ 
-            backgroundColor: getCategoryColor(problem.category),
-            color: 'var(--primary-color)',
-            fontWeight: '800'
-          }}
-        >
-          {problem.category}
-        </span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 'bold' }}>
-          {problem.id}
-        </span>
+      {/* Category Tag, ID & Department Row */}
+      <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <span 
+            className="badge" 
+            style={{ 
+              backgroundColor: getCategoryColor(problem.category),
+              color: 'var(--primary-color)',
+              fontWeight: '800'
+            }}
+          >
+            {problem.category}
+          </span>
+
+          {!displayImage && (
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              <span className={`badge ${getStatusClass(problem.status)}`}>
+                {problem.status ? problem.status.replace('_', ' ') : 'Pending'}
+              </span>
+              <span className={`badge ${getPriorityClass(problem.priority)}`}>
+                {problem.priority}
+              </span>
+            </div>
+          )}
+
+          <span 
+            style={{ 
+              fontFamily: 'var(--font-mono)', 
+              fontSize: '0.75rem', 
+              fontWeight: '800',
+              backgroundColor: 'var(--bg-color)',
+              border: '1.5px solid var(--primary-color)',
+              padding: '0.2rem 0.5rem',
+              borderRadius: '2px',
+              letterSpacing: '0.05em'
+            }}
+            title={problem.id}
+          >
+            {formatId(problem.id)}
+          </span>
+        </div>
+
+        {department && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+            <span className="badge" style={{ backgroundColor: 'var(--lavender)', color: 'var(--primary-color)', fontWeight: '700', fontSize: '0.75rem', padding: '0.2rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+              <Building size={12} />
+              <span>{department}</span>
+            </span>
+            {assignedStaffName && (
+              <span style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)' }}>
+                ({assignedStaffName})
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Title */}

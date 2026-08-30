@@ -13,13 +13,9 @@ import {
   Building,
   UserCheck
 } from "lucide-react";
-import {
-  getCurrentUser,
-  getStats,
-  fetchComplaintsApi,
-  updateIssueStatus,
-  logout
-} from "../services/client";
+import { getCurrentUser, logout } from "../services/authapi";
+import { getStats, fetchComplaintsApi } from "../services/complaintApi";
+import { updateIssueStatus } from "../services/staffApi";
 
 export function StaffDashboard() {
   const navigate = useNavigate();
@@ -128,7 +124,7 @@ export function StaffDashboard() {
   };
 
   const handleAcceptTask = async (issueId) => {
-    await updateIssueStatus(issueId, "IN_PROGRESS");
+    await updateIssueStatus(issueId, "Under Review");
     await loadData();
   };
 
@@ -148,20 +144,32 @@ export function StaffDashboard() {
 
     if (!issue.assignedTo && !issue.assignedDepartment) return false;
 
+    const currentIdStr = String(currentUserId || "");
+
     if (issue.assignedTo) {
-      const assignedId = issue.assignedTo._id || issue.assignedTo.id;
-      if (assignedId && currentUserId && String(assignedId) === String(currentUserId)) {
+      const assignedIdStr = typeof issue.assignedTo === "string"
+        ? issue.assignedTo
+        : String(issue.assignedTo._id || issue.assignedTo.id || "");
+
+      if (assignedIdStr && currentIdStr && assignedIdStr === currentIdStr) {
         return true;
       }
-      if (issue.assignedTo.email && currentUserEmail && issue.assignedTo.email.toLowerCase() === currentUserEmail) {
-        return true;
-      }
-      if (issue.assignedTo.name && currentUserName && issue.assignedTo.name.toLowerCase() === currentUserName) {
-        return true;
+
+      if (typeof issue.assignedTo === "object" && issue.assignedTo !== null) {
+        const assignedEmail = (issue.assignedTo.email || "").toLowerCase();
+        const assignedName = (issue.assignedTo.name || "").toLowerCase();
+
+        if (assignedEmail && currentUserEmail && assignedEmail === currentUserEmail) {
+          return true;
+        }
+
+        if (assignedName && currentUserName && assignedName === currentUserName) {
+          return true;
+        }
       }
     }
 
-    if (currentUserDept && issue.assignedDepartment && issue.assignedDepartment === currentUserDept) {
+    if (currentUserDept && issue.assignedDepartment && issue.assignedDepartment.trim().toLowerCase() === currentUserDept.trim().toLowerCase()) {
       return true;
     }
 
@@ -170,12 +178,14 @@ export function StaffDashboard() {
 
   const myStaffIssues = issues.filter(isAssignedToMe);
 
-  const activeIssues = myStaffIssues.filter(
-    (i) => i.status === "ASSIGNED" || i.status === "OPEN" || i.status === "Pending" || i.status === "IN_PROGRESS" || i.status === "In Progress"
-  );
-  const resolvedIssues = myStaffIssues.filter(
-    (i) => i.status === "RESOLVED" || i.status === "Resolved"
-  );
+  const activeIssues = myStaffIssues.filter((i) => {
+    const s = (i.status || "").toLowerCase();
+    return s === "assigned" || s === "open" || s === "pending" || s === "in_progress" || s === "in progress" || s === "under review";
+  });
+  const resolvedIssues = myStaffIssues.filter((i) => {
+    const s = (i.status || "").toLowerCase();
+    return s === "resolved";
+  });
 
   const displayedList = (activeTab === "queue" ? activeIssues : resolvedIssues).filter(
     (issue) =>
@@ -431,7 +441,7 @@ export function StaffDashboard() {
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.8rem", fontWeight: "bold" }}>{issue.id}</span>
                     {issue.assignedTo && (
                       <span className="badge" style={{ backgroundColor: "var(--lavender)", color: "var(--primary-color)", fontWeight: "bold" }}>
-                        👤 ASSIGNED TO: {issue.assignedTo.name}
+                        ASSIGNED TO: {issue.assignedTo.name}
                       </span>
                     )}
                   </div>
@@ -447,15 +457,20 @@ export function StaffDashboard() {
                   </p>
 
                   <div style={{ display: "flex", gap: "1rem", fontSize: "0.85rem", fontWeight: "600", color: "var(--text-secondary)" }}>
-                    <span>📍 {issue.location}</span>
-                    <span>👤 Reported by: {issue.reporterName}</span>
-                    <span>📅 Date: {issue.dateReported}</span>
+                    <span>{issue.location}</span>
+                    <span>Reported by: {issue.reporterName}</span>
+                    <span>Date: {issue.dateReported}</span>
                     <span style={{ color: "var(--coral)", fontWeight: "bold" }}>▲ {issue.upvotes} Upvotes</span>
                   </div>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.75rem" }}>
-                  {(issue.status === "ASSIGNED" || issue.status === "OPEN" || issue.status === "Pending") && (
+                  {(
+                    (issue.status || "").toLowerCase() === "assigned" ||
+                    (issue.status || "").toLowerCase() === "pending" ||
+                    (issue.status || "").toLowerCase() === "open" ||
+                    (issue.status || "").toLowerCase() === "under review"
+                  ) && (
                     <button
                       className="brutal-btn lime"
                       onClick={() => handleAcceptTask(issue.id)}
@@ -482,10 +497,15 @@ export function StaffDashboard() {
                     onChange={(e) => handleStatusChange(issue.id, e.target.value)}
                     style={{ padding: "0.4rem 0.8rem", width: "170px", fontSize: "0.85rem" }}
                   >
-                    <option value="OPEN">🔴 OPEN</option>
-                    <option value="ASSIGNED">🔵 ASSIGNED</option>
-                    <option value="IN_PROGRESS">🟡 IN PROGRESS</option>
-                    <option value="RESOLVED">🟢 RESOLVED</option>
+                    {(issue.status === "Pending" || issue.status === "Assigned") && (
+                      <option value={issue.status} disabled>
+                        {issue.status === "Pending" ? "Pending" : "Assigned"}
+                      </option>
+                    )}
+                    <option value="Under Review">Under Review</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Rejected">Rejected</option>
                   </select>
 
                   <Link to={`/problems/${issue.id}`} className="brutal-btn small yellow" style={{ textDecoration: "none" }}>

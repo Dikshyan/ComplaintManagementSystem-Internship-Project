@@ -3,15 +3,25 @@ const jwt = require("jsonwebtoken");
 const { userModel } = require("../models/user.model");
 
 const createToken = (user) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET is not configured");
+  }
+
   return jwt.sign(
-    { id: user._id, email: user.email, role: user.role },
-    process.env.JWT_SECRET || "complaint-secret-key",
-    { expiresIn: "7d" }
+    {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "7d",
+    }
   );
 };
 
 const registerUser = async (req, res) => {
-try {
+  try {
     const { name, email, password } = req.body; // role removed from destructure
 
     if (!name || !email || !password) {
@@ -131,9 +141,59 @@ const logoutUser = async (req, res) => {
   return res.status(200).json({ message: "Logged out successfully." });
 };
 
+const forgotPassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      return res.status(400).json({
+        message: "Email and new password are required.",
+      });
+    }
+
+    const trimmedEmail = String(email).trim().toLowerCase();
+
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({
+        message: "Password must be at least 6 characters long.",
+      });
+    }
+
+    const user = await userModel.findOne({
+      email: trimmedEmail,
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "No account found with this email.",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(
+      String(newPassword),
+      10
+    );
+
+    user.password = hashedPassword;
+
+    await user.save();
+
+    return res.status(200).json({
+      message: "Password reset successfully.",
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+
+    return res.status(500).json({
+      message: "Failed to reset password.",
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getCurrentUser,
-  logoutUser
+  logoutUser,
+  forgotPassword
 };

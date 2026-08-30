@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { User, Mail, Lock, ShieldCheck, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { login, register, getCurrentUser, fetchCurrentUser } from '../services/client';
+import { User, Mail, Lock, ShieldCheck, ArrowRight, Eye, EyeOff, AlertCircle, X as XIcon } from 'lucide-react';
+import { login, register, getCurrentUser, fetchCurrentUser, forgotPasswordApi } from '../services/authapi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AVATAR_OPTIONS = [
-  { emoji: '🦁', color: 'var(--yellow)', label: 'Lion' },
-  { emoji: '🦉', color: 'var(--lavender)', label: 'Owl' },
-  { emoji: '🐼', color: 'var(--lime)', label: 'Panda' },
-  { emoji: '🦊', color: 'var(--coral)', label: 'Fox' },
-  { emoji: '🐸', color: 'var(--white)', label: 'Frog' },
-  { emoji: '🦄', color: 'var(--lavender)', label: 'Unicorn' }
+  { label: 'Theme 1', color: 'var(--yellow)' },
+  { label: 'Theme 2', color: 'var(--lavender)' },
+  { label: 'Theme 3', color: 'var(--lime)' },
+  { label: 'Theme 4', color: 'var(--coral)' },
+  { label: 'Theme 5', color: 'var(--white)' },
+  { label: 'Theme 6', color: 'var(--lavender)' }
 ];
 
 export function LoginRegister() {
@@ -28,6 +28,15 @@ export function LoginRegister() {
   // Password visibility
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Forgot password modal state
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+  const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState('');
 
   // Errors & Loading state
   const [error, setError] = useState('');
@@ -107,7 +116,7 @@ export function LoginRegister() {
       if (isLoginView) {
         loggedUser = await login(username, password);
       } else {
-        loggedUser = await register(username, email, password, selectedAvatar.emoji);
+        loggedUser = await register(username, email, password, selectedAvatar.label);
       }
       setLoading(false);
       if (loggedUser && loggedUser.role === 'admin') {
@@ -120,6 +129,40 @@ export function LoginRegister() {
     } catch (err) {
       setError('Authentication failed. Please check your credentials and try again.');
       setLoading(false);
+    }
+  };
+
+  const handleForgotPasswordSubmit = async (e) => {
+    e.preventDefault();
+    setForgotError('');
+
+    if (!forgotEmail || !forgotEmail.trim()) {
+      setForgotError('Please enter your registered email address.');
+      return;
+    }
+
+    if (!forgotNewPassword || forgotNewPassword.length < 6) {
+      setForgotError('New password must be at least 6 characters long.');
+      return;
+    }
+
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      setForgotError('Passwords do not match.');
+      return;
+    }
+
+    setForgotLoading(true);
+    try {
+      await forgotPasswordApi(forgotEmail, forgotNewPassword);
+      setForgotLoading(false);
+      setShowForgotPasswordModal(false);
+      setForgotEmail('');
+      setForgotNewPassword('');
+      setForgotConfirmPassword('');
+      setUsername(forgotEmail);
+    } catch (err) {
+      setForgotLoading(false);
+      setForgotError(err.message || 'Failed to reset password.');
     }
   };
 
@@ -410,6 +453,28 @@ export function LoginRegister() {
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
+                    {isLoginView && (
+                      <div style={{ textAlign: 'right', marginTop: '0.35rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForgotError('');
+                            setShowForgotPasswordModal(true);
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--coral)',
+                            fontWeight: '800',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            textDecoration: 'underline'
+                          }}
+                        >
+                          Forgot Password?
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Confirm Password (Registration view only) */}
@@ -466,15 +531,16 @@ export function LoginRegister() {
                         gap: '0.5rem' 
                       }}>
                         {AVATAR_OPTIONS.map((opt) => {
-                          const isSelected = selectedAvatar.emoji === opt.emoji;
+                          const isSelected = selectedAvatar.label === opt.label;
                           return (
                             <button
-                              key={opt.emoji}
+                              key={opt.label}
                               type="button"
                               onClick={() => setSelectedAvatar(opt)}
                               style={{
-                                padding: '0.5rem 0',
-                                fontSize: '1.5rem',
+                                padding: '0.4rem 0',
+                                fontSize: '0.75rem',
+                                fontWeight: '700',
                                 backgroundColor: opt.color,
                                 border: '2px solid var(--primary-color)',
                                 boxShadow: isSelected ? '2px 2px 0px var(--primary-color)' : 'none',
@@ -487,7 +553,7 @@ export function LoginRegister() {
                               }}
                               title={opt.label}
                             >
-                              {opt.emoji}
+                              {opt.label}
                             </button>
                           );
                         })}
@@ -551,6 +617,138 @@ export function LoginRegister() {
 
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPasswordModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem'
+          }}
+        >
+          <div
+            className="brutal-card white"
+            style={{
+              maxWidth: '480px',
+              width: '100%',
+              padding: '2.5rem',
+              backgroundColor: 'var(--white)',
+              position: 'relative'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.6rem', margin: 0, textTransform: 'uppercase' }}>
+                Reset Password
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowForgotPasswordModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                <XIcon size={22} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+              Enter your registered email address and create a new password to recover account access.
+            </p>
+
+            {forgotError && (
+              <div className="badge status-open" style={{ width: '100%', padding: '0.75rem', marginBottom: '1.25rem', textAlign: 'left' }}>
+                <AlertCircle size={16} />
+                <span>{forgotError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleForgotPasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: '800', fontSize: '0.85rem', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                  Registered Email Address
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}>
+                    <Mail size={18} />
+                  </span>
+                  <input
+                    type="email"
+                    className="brutal-input"
+                    placeholder="your.email@example.com"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    style={{ paddingLeft: '2.5rem' }}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: '800', fontSize: '0.85rem', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                  New Password
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}>
+                    <Lock size={18} />
+                  </span>
+                  <input
+                    type={showForgotNewPassword ? "text" : "password"}
+                    className="brutal-input"
+                    placeholder="At least 6 characters"
+                    value={forgotNewPassword}
+                    onChange={(e) => setForgotNewPassword(e.target.value)}
+                    style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotNewPassword(!showForgotNewPassword)}
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                  >
+                    {showForgotNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: '800', fontSize: '0.85rem', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                  Confirm New Password
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}>
+                    <Lock size={18} />
+                  </span>
+                  <input
+                    type="password"
+                    className="brutal-input"
+                    placeholder="Repeat new password"
+                    value={forgotConfirmPassword}
+                    onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                    style={{ paddingLeft: '2.5rem' }}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="submit" className="brutal-btn primary" disabled={forgotLoading} style={{ flex: 1 }}>
+                  {forgotLoading ? "Resetting..." : "Reset Password"}
+                </button>
+                <button type="button" className="brutal-btn white" onClick={() => setShowForgotPasswordModal(false)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @media (max-width: 850px) {
