@@ -21,7 +21,7 @@ import {
 import { getCurrentUser, logout } from "../services/authapi";
 import { getStats, getIssues, fetchComplaintsApi } from "../services/complaintApi";
 import { updateIssueStatus } from "../services/staffApi";
-import { createStaffAccountApi, deleteUserApi, assignComplaintApi } from "../services/adminApi";
+import { createStaffAccountApi, deleteUserApi, assignComplaintApi, deleteRejectedComplaintApi } from "../services/adminApi";
 import { fetchUsersApi } from "../services/userApi";
 import { ShieldAlert, Plus, X as XIcon, Eye, EyeOff, Trash2 } from "lucide-react";
 
@@ -166,6 +166,18 @@ export function AdminDashboard() {
   const handleStatusChange = async (issueId, newStatus) => {
     await updateIssueStatus(issueId, newStatus);
     await loadData();
+  };
+
+  const handleDeleteRejectedComplaint = async (issueId) => {
+    if (!window.confirm("Are you sure you want to permanently delete this rejected complaint?")) {
+      return;
+    }
+    try {
+      await deleteRejectedComplaintApi(issueId);
+      await loadData();
+    } catch (err) {
+      toast.error(err.message || "Failed to remove rejected complaint");
+    }
   };
 
   const handleLogout = () => {
@@ -526,6 +538,17 @@ export function AdminDashboard() {
                           </option>
                         ))}
                       </select>
+                      {issue.status === "Rejected" && (
+                        <button
+                          className="brutal-btn small coral"
+                          onClick={() => handleDeleteRejectedComplaint(issue.id || issue._id)}
+                          style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "0.35rem" }}
+                          title="Delete Rejected Complaint"
+                        >
+                          <Trash2 size={13} />
+                          <span>Delete</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -630,6 +653,18 @@ export function AdminDashboard() {
                     <div style={{ fontSize: "0.8rem", fontWeight: "bold", fontFamily: "var(--font-mono)", backgroundColor: "var(--bg-color)", padding: "0.35rem 0.6rem", border: "2px solid var(--primary-color)" }}>
                       STATUS: {issue.status}
                     </div>
+
+                    {issue.status === "Rejected" && (
+                      <button
+                        className="brutal-btn small coral"
+                        onClick={() => handleDeleteRejectedComplaint(issue.id || issue._id)}
+                        style={{ padding: "0.35rem 0.65rem", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "0.35rem" }}
+                        title="Delete Rejected Complaint"
+                      >
+                        <Trash2 size={14} />
+                        <span>Delete Rejected</span>
+                      </button>
+                    )}
 
                     <Link to={`/problems/${issue.id}`} className="brutal-btn small yellow" style={{ textDecoration: "none" }}>
                       View Details

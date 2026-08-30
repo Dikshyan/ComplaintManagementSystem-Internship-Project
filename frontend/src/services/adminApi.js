@@ -56,3 +56,19 @@ export async function deleteUserApi(userId) {
     toast.success("User account removed successfully");
     return data;
 }
+
+export async function deleteRejectedComplaintApi(id) {
+    let data;
+    if (id && id.length === 24) {
+        data = await apiRequest(`/complaint/${id}`, {
+            method: "DELETE"
+        });
+    }
+
+    const issues = getIssues();
+    const updated = issues.filter(i => i.id !== id && i._id !== id);
+    localStorage.setItem("complaints", JSON.stringify(updated));
+
+    toast.success("Rejected complaint removed successfully");
+    return data || updated;
+}

@@ -9,6 +9,7 @@ const {
   getComplaintStats,
   voteOnComplaint,
   addCommentToComplaint,
+  removeRejectedComplaint,
 } = require("../controllers/complaintController");
 
 const { protect } = require("../middleware/authMiddleware");
@@ -58,6 +59,13 @@ router.patch(
   protect,
   requireAdmin,
   assignComplaint
+);
+
+router.delete(
+  "/:id",
+  protect,
+  requireAdmin,
+  removeRejectedComplaint
 );
 
 module.exports = router;

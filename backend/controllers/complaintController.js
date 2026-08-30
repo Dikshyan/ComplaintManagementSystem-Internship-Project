@@ -367,6 +367,39 @@ const addCommentToComplaint = async (req, res) => {
   }
 };
 
+const removeRejectedComplaint = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const complaint = await complaintModel.findById(id);
+
+    if (!complaint) {
+      return res.status(404).json({
+        message: "Complaint not found",
+      });
+    }
+
+    // Only rejected complaints can be removed
+    if (complaint.status !== "Rejected") {
+      return res.status(400).json({
+        message: "Only rejected complaints can be removed",
+      });
+    }
+
+    await complaintModel.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      message: "Rejected complaint removed successfully",
+    });
+  } catch (error) {
+    console.error("Error removing rejected complaint:", error);
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
 module.exports = {
   createComplaint,
   getAllComplaints,
@@ -376,4 +409,5 @@ module.exports = {
   getComplaintStats,
   voteOnComplaint,
   addCommentToComplaint,
+  removeRejectedComplaint,
 };
